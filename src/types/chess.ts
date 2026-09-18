@@ -18,6 +18,13 @@ export interface Premove {
     to: Square;
 }
 
+// Nước phong cấp đang chờ người chơi chọn quân (Hậu/Xe/Tượng/Mã) — xem PromotionModal.
+export interface PendingPromotion {
+    from: Square;
+    to: Square;
+    color: PieceColor;
+}
+
 export interface AIWorkerMove {
     from: string;
     to: string;

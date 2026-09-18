@@ -43,10 +43,11 @@ function getGameOverModalDelayMs(lastMove: LastMove | null): number {
 export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     const { game, lastMove, pieces, moveHistory, applyMove, resetGame: resetChessGame } = useChessGame();
     const [isReviewing, setIsReviewing] = useState(false);
-    const { whiteTime, blackTime, flagFall, resetClock } = useChessClock(game, settings.timeControlMinutes);
+    const isGameOver = game.isGameOver();
+    const { whiteTime, blackTime, flagFall, resetClock } = useChessClock(game, settings.timeControlMinutes, isGameOver);
     const { muted, toggleMuted, playMove, playCapture, playCheck } = useSoundSettings();
 
-    const isMatchOver = game.isGameOver() || flagFall !== null;
+    const isMatchOver = isGameOver || flagFall !== null;
     const [showGameOverModal, setShowGameOverModal] = useState(false);
 
     useEffect(() => {
@@ -67,10 +68,29 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     }, [isMatchOver, flagFall, lastMove]);
 
     useAIOpponent(game, applyMove, settings.mode, settings.difficulty, isMatchOver);
-    const { isPremoveMode, premoveFrom, premove, handlePremoveSquareClick, cancelPremove, resetPremove } =
-        usePremove(game, applyMove, settings.mode, isMatchOver);
-    const { selectedSquare, possibleMoves, pendingPromotion, handleSquareClick: handleNormalClick, clearSelection, choosePromotion } =
-        useMoveSelection(game, applyMove);
+    const {
+        isPremoveMode,
+        premoveFrom,
+        premove,
+        pendingPromotion: premovePendingPromotion,
+        handlePremoveSquareClick,
+        choosePromotion: choosePremovePromotion,
+        cancelPremove,
+        resetPremove,
+    } = usePremove(game, applyMove, settings.mode, isMatchOver);
+    const {
+        selectedSquare,
+        possibleMoves,
+        pendingPromotion: selectionPendingPromotion,
+        handleSquareClick: handleNormalClick,
+        clearSelection,
+        choosePromotion: chooseSelectionPromotion,
+    } = useMoveSelection(game, applyMove);
+
+    // Chỉ một trong hai (nước đi thường hoặc premove vừa thực hiện) có thể đang chờ
+    // chọn quân phong cấp tại một thời điểm — gộp lại thành một modal duy nhất.
+    const pendingPromotion = selectionPendingPromotion ?? premovePendingPromotion;
+    const choosePromotion = selectionPendingPromotion ? chooseSelectionPromotion : choosePremovePromotion;
 
     useMoveSound(lastMove, playMove, playCapture);
     const { isFlashing: isCheckFlashing, checkedKingSquare } = useCheckAlert(game, pieces, playCheck);

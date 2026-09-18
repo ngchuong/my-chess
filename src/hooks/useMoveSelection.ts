@@ -1,13 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { Chess, Move, PieceSymbol, Square } from 'chess.js';
 import type { ApplyMoveFn } from './useChessGame';
-import type { PieceColor } from '../types/chess';
-
-export interface PendingPromotion {
-    from: Square;
-    to: Square;
-    color: PieceColor;
-}
+import type { PendingPromotion } from '../types/chess';
 
 // Chọn quân + thực hiện nước đi bình thường (đến lượt của chính mình). Tách riêng
 // khỏi ChessBoard để có thể tái dùng cho các bàn cờ khác sau này (ví dụ bàn phân

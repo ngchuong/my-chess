@@ -308,8 +308,9 @@ export function evaluateMove(
 
     let bestScoreWhite = moverColor === 'w' ? -Infinity : Infinity;
     let bestSan = moves[0].san;
-    let playedScoreWhite = -Infinity;
+    let playedScoreWhite = 0;
     let playedSan = moves[0].san;
+    let playedMoveFound = false;
 
     for (const move of moves) {
         applyMove(game, move);
@@ -326,8 +327,14 @@ export function evaluateMove(
         if (move.from === playedMove.from && move.to === playedMove.to && (move.promotion ?? undefined) === playedMove.promotion) {
             playedScoreWhite = score;
             playedSan = move.san;
+            playedMoveFound = true;
         }
     }
+
+    // Về lý thuyết nước đã đi luôn phải nằm trong danh sách nước hợp lệ ở đúng vị trí
+    // đó (nó đã từng được chess.js chấp nhận lúc chơi thật) — nhưng nếu vì lý do nào
+    // đó không khớp được nước nào, trả về null thay vì một centipawnLoss sai lệch.
+    if (!playedMoveFound) return null;
 
     const toMoverPerspective = (whiteScore: number) => (moverColor === 'w' ? whiteScore : -whiteScore);
 

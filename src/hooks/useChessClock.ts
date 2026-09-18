@@ -4,8 +4,10 @@ import type { TimeControlMinutes } from '../types/game';
 
 // Đồng hồ đếm ngược thật cho cả hai bên — chạy cho bên đang tới lượt, hết giờ thì
 // bên đó thua (`flagFall`). Dùng `gameRef` để đọc lượt đi hiện tại bên trong
-// interval mà không phải huỷ/tạo lại interval mỗi khi có nước đi mới.
-export function useChessClock(game: Chess, timeControlMinutes: TimeControlMinutes) {
+// interval mà không phải huỷ/tạo lại interval mỗi khi có nước đi mới. Nhận sẵn
+// `isGameOver` từ nơi gọi thay vì tự tính lại `game.isGameOver()` — tránh gọi hàm
+// này (tốn công sinh nước đi hợp lệ) 2 lần mỗi render.
+export function useChessClock(game: Chess, timeControlMinutes: TimeControlMinutes, isGameOver: boolean) {
     const initialSeconds = timeControlMinutes === null ? null : timeControlMinutes * 60;
 
     const [whiteTime, setWhiteTime] = useState<number | null>(initialSeconds);
@@ -18,7 +20,7 @@ export function useChessClock(game: Chess, timeControlMinutes: TimeControlMinute
     }, [game]);
 
     const isClockRelevant = timeControlMinutes !== null;
-    const isOver = game.isGameOver() || flagFall !== null;
+    const isOver = isGameOver || flagFall !== null;
 
     useEffect(() => {
         if (!isClockRelevant || isOver) return;
