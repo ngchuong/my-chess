@@ -3,6 +3,7 @@ import { Chess, type Square } from 'chess.js';
 import { CAPTURE_CLEANUP_MS, PROMOTE_CLEANUP_MS } from '../lib/animation';
 import { applyMoveToPieces, createInitialPieces } from '../lib/pieceTracking';
 import type { AnimatedPiece, LastMove } from '../types/chess';
+import type { MoveRecord } from '../types/analysis';
 
 export interface MoveInput {
     from: Square;
@@ -28,8 +29,10 @@ export function useChessGame() {
     const [game, setGame] = useState<Chess>(() => new Chess());
     const [lastMove, setLastMove] = useState<LastMove | null>(null);
     const [pieces, setPieces] = useState<AnimatedPiece[]>(createInitialPieces);
+    const [moveHistory, setMoveHistory] = useState<MoveRecord[]>([]);
 
     const applyMove = useCallback((input: MoveInput): boolean => {
+        const fenBefore = game.fen();
         let move;
         try {
             move = game.move(input);
@@ -38,8 +41,8 @@ export function useChessGame() {
         }
         if (!move) return false;
 
-        setPieces((prev) => applyMoveToPieces(prev, move));
-        setLastMove({
+        const fenAfter = game.fen();
+        const moveInfo: LastMove = {
             from: move.from,
             to: move.to,
             san: move.san,
@@ -48,7 +51,16 @@ export function useChessGame() {
             captured: move.captured,
             promotion: move.promotion,
             isCastle: move.isKingsideCastle() || move.isQueensideCastle(),
-        });
+        };
+
+        setPieces((prev) => applyMoveToPieces(prev, move));
+        setLastMove(moveInfo);
+        setMoveHistory((prev) => [...prev, {
+            ...moveInfo,
+            moveNumber: Math.floor(prev.length / 2) + 1,
+            fenBefore,
+            fenAfter,
+        }]);
         setGame(new Chess(game.fen()));
         return true;
     }, [game]);
@@ -57,6 +69,7 @@ export function useChessGame() {
         setGame(new Chess());
         setLastMove(null);
         setPieces(createInitialPieces());
+        setMoveHistory([]);
     }, []);
 
     // Dọn hiệu ứng tạm thời (quân bị ăn / vừa phong cấp) sau khi animation kết thúc:
@@ -75,5 +88,5 @@ export function useChessGame() {
         return () => timers.forEach(clearTimeout);
     }, [pieces]);
 
-    return { game, lastMove, pieces, applyMove, resetGame };
+    return { game, lastMove, pieces, moveHistory, applyMove, resetGame };
 }

@@ -37,10 +37,7 @@ export default function Board({
     const activeSelection = selectedSquare ?? premoveFrom;
 
     return (
-        <div
-            className={`relative w-full max-w-120 border-4 rounded-lg overflow-hidden shadow-2xl bg-slate-800 transition-colors duration-150 ${isCheckFlashing ? 'border-red-500 animate-board-shake' : 'border-slate-700'
-                }`}
-        >
+        <div className={`relative w-full max-w-120 border-4 rounded-lg overflow-hidden shadow-2xl bg-slate-800 transition-colors duration-150 ${isCheckFlashing ? 'border-red-500 animate-board-shake' : 'border-slate-700'}`}>
             <div className="grid grid-cols-[20px_repeat(8,minmax(0,1fr))] sm:grid-cols-[24px_repeat(8,minmax(0,1fr))]">
                 {RANKS.map((rank, rowIndex) => (
                     <Fragment key={rank}>

@@ -27,7 +27,7 @@ function Square({
         <button
             onClick={onClick}
             className={`
-                relative aspect-square flex items-center justify-center cursor-pointer transition-colors duration-150
+                relative aspect-square flex items-center justify-center cursor-pointer transition-colors duration-150 touch-manipulation
                 ${isDark ? 'bg-board-dark' : 'bg-board-light'}
                 ${isSelected || isPremoveFrom ? 'bg-board-selected!' : ''}
                 hover:brightness-95

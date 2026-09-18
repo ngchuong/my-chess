@@ -1,4 +1,4 @@
-import type { Move, PieceSymbol, Square } from 'chess.js';
+import { Chess, type Move, type PieceSymbol, type Square } from 'chess.js';
 import type { AnimatedPiece, PieceColor } from '../types/chess';
 
 interface StartingPiece {
@@ -28,6 +28,23 @@ export function createInitialPieces(): AnimatedPiece[] {
         color: p.color,
         square: p.square,
     }));
+}
+
+// Dựng danh sách quân tĩnh từ một FEN bất kỳ — dùng cho bàn cờ xem lại ván đấu,
+// nơi người xem có thể nhảy tới bất kỳ nước nào chứ không chỉ tiến dần từng bước
+// (nên không cần id ổn định để animate như lúc chơi thật).
+export function piecesFromFen(fen: string): AnimatedPiece[] {
+    const board = new Chess(fen).board();
+    const pieces: AnimatedPiece[] = [];
+
+    for (const row of board) {
+        for (const cell of row) {
+            if (!cell) continue;
+            pieces.push({ id: `${cell.square}-${cell.color}-${cell.type}`, type: cell.type, color: cell.color, square: cell.square });
+        }
+    }
+
+    return pieces;
 }
 
 const CASTLE_ROOK_SQUARES: Record<PieceColor, Record<'k' | 'q', { from: Square; to: Square }>> = {

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AI_COLOR, colorLabel, coordsToSquare } from '../../lib/boardUtils';
 import { useAIOpponent } from '../../hooks/useAIOpponent';
 import { useCheckAlert } from '../../hooks/useCheckAlert';
@@ -9,6 +10,7 @@ import { usePremove } from '../../hooks/usePremove';
 import { useSoundSettings } from '../../hooks/useSoundSettings';
 import type { GameSettings } from '../../types/game';
 import Button from '../ui/Button';
+import GameReview from '../GameReview/GameReview';
 import Board from './Board';
 import ClockPanel from './ClockPanel';
 import GameOverModal, { type GameOverInfo } from './GameOverModal';
@@ -27,7 +29,8 @@ const DIFFICULTY_LABELS: Record<GameSettings['difficulty'], string> = {
 };
 
 export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
-    const { game, lastMove, pieces, applyMove, resetGame: resetChessGame } = useChessGame();
+    const { game, lastMove, pieces, moveHistory, applyMove, resetGame: resetChessGame } = useChessGame();
+    const [isReviewing, setIsReviewing] = useState(false);
     const { whiteTime, blackTime, flagFall, resetClock } = useChessClock(game, settings.timeControlMinutes);
     const { muted, toggleMuted, playMove, playCapture, playCheck } = useSoundSettings();
 
@@ -47,6 +50,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         resetClock();
         resetPremove();
         clearSelection();
+        setIsReviewing(false);
     };
 
     const handleSquareClick = (row: number, col: number) => {
@@ -104,6 +108,10 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         ? '2 người'
         : `Đấu với máy (${DIFFICULTY_LABELS[settings.difficulty]})`;
 
+    if (isReviewing) {
+        return <GameReview moveHistory={moveHistory} onClose={() => setIsReviewing(false)} />;
+    }
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white select-none p-4">
             <TopBar modeLabel={modeLabel} onExit={onExit} muted={muted} onToggleMuted={toggleMuted} />
@@ -133,7 +141,12 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
                 Ván mới
             </Button>
 
-            <GameOverModal info={getGameOverInfo()} onNewGame={resetGame} onExit={onExit} />
+            <GameOverModal
+                info={getGameOverInfo()}
+                onNewGame={resetGame}
+                onExit={onExit}
+                onReviewGame={() => setIsReviewing(true)}
+            />
         </div>
     );
 }

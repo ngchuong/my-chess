@@ -280,3 +280,62 @@ export function getAIMove(game: Chess, difficulty: Difficulty): Move | null {
 
     return bestMove;
 }
+
+export interface MoveEvaluation {
+    moverColor: 'w' | 'b';
+    bestScoreForMover: number;
+    playedScoreForMover: number;
+    bestSan: string;
+    playedSan: string;
+}
+
+const ANALYSIS_TIME_BUDGET_MS = 2000;
+
+// So sánh nước đã đi với nước tốt nhất theo engine ở cùng một vị trí (dùng cho
+// tính năng phân tích ván đấu) — điểm luôn quy về góc nhìn của bên vừa đi
+// (dương = có lợi cho bên đó) để dễ tính "centipawn loss".
+export function evaluateMove(
+    fen: string,
+    playedMove: { from: string; to: string; promotion?: string },
+    depth: number,
+): MoveEvaluation | null {
+    const game = new Chess(fen);
+    const moverColor = game.turn();
+    const moves = orderMoves(game.moves({ verbose: true }) as Move[]);
+    if (moves.length === 0) return null;
+
+    const ctx: SearchContext = { deadline: Date.now() + ANALYSIS_TIME_BUDGET_MS, aborted: false };
+
+    let bestScoreWhite = moverColor === 'w' ? -Infinity : Infinity;
+    let bestSan = moves[0].san;
+    let playedScoreWhite = -Infinity;
+    let playedSan = moves[0].san;
+
+    for (const move of moves) {
+        applyMove(game, move);
+        const nextMaximizing = game.turn() === 'w';
+        const score = minimax(game, depth - 1, -Infinity, Infinity, nextMaximizing, ctx);
+        game.undo();
+
+        const isBetterForMover = moverColor === 'w' ? score > bestScoreWhite : score < bestScoreWhite;
+        if (isBetterForMover) {
+            bestScoreWhite = score;
+            bestSan = move.san;
+        }
+
+        if (move.from === playedMove.from && move.to === playedMove.to && (move.promotion ?? undefined) === playedMove.promotion) {
+            playedScoreWhite = score;
+            playedSan = move.san;
+        }
+    }
+
+    const toMoverPerspective = (whiteScore: number) => (moverColor === 'w' ? whiteScore : -whiteScore);
+
+    return {
+        moverColor,
+        bestScoreForMover: toMoverPerspective(bestScoreWhite),
+        playedScoreForMover: toMoverPerspective(playedScoreWhite),
+        bestSan,
+        playedSan,
+    };
+}
