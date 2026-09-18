@@ -17,6 +17,7 @@ import Board from './Board';
 import ClockPanel from './ClockPanel';
 import GameOverModal, { type GameOverInfo } from './GameOverModal';
 import GameStatus from './GameStatus';
+import PromotionModal from './PromotionModal';
 import TopBar from './TopBar';
 
 interface ChessBoardProps {
@@ -68,7 +69,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     useAIOpponent(game, applyMove, settings.mode, settings.difficulty, isMatchOver);
     const { isPremoveMode, premoveFrom, premove, handlePremoveSquareClick, cancelPremove, resetPremove } =
         usePremove(game, applyMove, settings.mode, isMatchOver);
-    const { selectedSquare, possibleMoves, handleSquareClick: handleNormalClick, clearSelection } =
+    const { selectedSquare, possibleMoves, pendingPromotion, handleSquareClick: handleNormalClick, clearSelection, choosePromotion } =
         useMoveSelection(game, applyMove);
 
     useMoveSound(lastMove, playMove, playCapture);
@@ -84,7 +85,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     };
 
     const handleSquareClick = (row: number, col: number) => {
-        if (isMatchOver) return;
+        if (isMatchOver || pendingPromotion) return;
 
         const squareNotation = coordsToSquare(row, col);
 
@@ -177,6 +178,10 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
                 onExit={onExit}
                 onReviewGame={() => setIsReviewing(true)}
             />
+
+            {pendingPromotion && (
+                <PromotionModal color={pendingPromotion.color} onChoose={choosePromotion} />
+            )}
         </div>
     );
 }
