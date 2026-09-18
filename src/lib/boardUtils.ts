@@ -30,6 +30,10 @@ export const coordsToSquare = (row: number, col: number): Square => {
     return `${FILES[col]}${RANKS[row]}` as Square;
 };
 
+export const squareToCoords = (square: Square): { row: number; col: number } => {
+    return { row: RANKS.indexOf(square[1]), col: FILES.indexOf(square[0]) };
+};
+
 export const colorLabel = (color: 'w' | 'b') => (color === 'w' ? 'Trắng' : 'Đen');
 
 export const formatTime = (seconds: number | null) => {

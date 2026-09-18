@@ -1,10 +1,16 @@
-import type { Square } from 'chess.js';
+import type { PieceSymbol, Square } from 'chess.js';
+
+export type PieceColor = 'w' | 'b';
 
 export interface LastMove {
     from: Square;
     to: Square;
     san: string;
-    color: 'w' | 'b';
+    color: PieceColor;
+    piece: PieceSymbol;
+    captured?: PieceSymbol;
+    promotion?: PieceSymbol;
+    isCastle: boolean;
 }
 
 export interface Premove {
@@ -17,5 +23,16 @@ export interface AIWorkerMove {
     to: string;
     promotion?: string;
     san: string;
-    color: 'w' | 'b';
+    color: PieceColor;
+}
+
+// Một quân cờ được theo dõi xuyên suốt ván đấu bằng `id` cố định (gán từ ô xuất
+// phát), phục vụ animation trượt mượt khi quân di chuyển giữa các ô.
+export interface AnimatedPiece {
+    id: string;
+    type: PieceSymbol;
+    color: PieceColor;
+    square: Square;
+    // Hiệu ứng tạm thời đang phát cho quân này (tự xoá sau khi animation xong).
+    effect?: 'captured' | 'promoted';
 }

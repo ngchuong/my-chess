@@ -1,26 +1,28 @@
 import { memo } from 'react';
-import type { PieceSymbol } from 'chess.js';
-import { PIECE_IMAGES } from '../../lib/boardUtils';
-
-interface SquarePiece {
-    type: PieceSymbol;
-    color: 'w' | 'b';
-}
 
 interface SquareProps {
-    piece: SquarePiece | null | undefined;
-    isDark: boolean;
-    isSelected: boolean;
-    isPossibleMove: boolean;
-    isLastMove: boolean;
-    isPremoveFrom: boolean;
-    isPremoveQueued: boolean;
-    onClick: () => void;
+    readonly isDark: boolean;
+    readonly isSelected: boolean;
+    readonly isPossibleMove: boolean;
+    readonly isLastMove: boolean;
+    readonly isPremoveFrom: boolean;
+    readonly isPremoveQueued: boolean;
+    readonly isCheckedKing: boolean;
+    readonly onClick: () => void;
 }
 
-// Một ô của bàn cờ. Tách riêng để dễ thêm hiệu ứng sau này (chiếu hết, nhập
-// thành, ...) mà không phải đụng vào logic ván cờ trong ChessBoard.
-function Square({ piece, isDark, isSelected, isPossibleMove, isLastMove, isPremoveFrom, isPremoveQueued, onClick }: SquareProps) {
+// Một ô của bàn cờ — chỉ lo nền/hiệu ứng highlight và click; quân cờ được vẽ ở
+// lớp phủ riêng (xem PieceLayer) để có thể animate trượt qua nhiều ô.
+function Square({
+    isDark,
+    isSelected,
+    isPossibleMove,
+    isLastMove,
+    isPremoveFrom,
+    isPremoveQueued,
+    isCheckedKing,
+    onClick,
+}: SquareProps) {
     return (
         <button
             onClick={onClick}
@@ -39,17 +41,12 @@ function Square({ piece, isDark, isSelected, isPossibleMove, isLastMove, isPremo
                 <div className="absolute inset-0 bg-sky-400/35 pointer-events-none" />
             )}
 
-            {isPossibleMove && (
-                <div className="absolute w-4 h-4 bg-black/30 rounded-full z-10 pointer-events-none" />
+            {isCheckedKing && (
+                <div className="absolute inset-0 animate-king-check pointer-events-none" />
             )}
 
-            {piece && (
-                <img
-                    src={PIECE_IMAGES[piece.color][piece.type]}
-                    alt={`${piece.color} ${piece.type}`}
-                    className={`w-[85%] h-[85%] object-contain pointer-events-none transition-transform duration-100 ${isSelected ? 'scale-110' : ''}`}
-                    draggable={false}
-                />
+            {isPossibleMove && (
+                <div className="absolute w-4 h-4 bg-black/30 rounded-full z-10 pointer-events-none" />
             )}
         </button>
     );

@@ -46,3 +46,81 @@ body {
   margin: 0;
 }
 
+/* Quân cờ bị ăn: bật sáng chớp nhoáng rồi vỡ tan/xoay/mờ dần. */
+@keyframes piece-capture {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  15% {
+    transform: scale(1.25) rotate(-10deg);
+    opacity: 1;
+    filter: brightness(1.7) drop-shadow(0 0 8px rgba(255, 255, 255, 0.85));
+  }
+  100% {
+    transform: scale(0.15) rotate(35deg);
+    opacity: 0;
+    filter: brightness(1);
+  }
+}
+.animate-piece-capture {
+  animation: piece-capture 380ms ease-in forwards;
+}
+
+/* Quân vừa phong cấp: bừng sáng và phóng to nhẹ rồi trở lại bình thường. */
+@keyframes piece-promote {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(250, 204, 21, 0));
+  }
+  40% {
+    transform: scale(1.4);
+    filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.95)) brightness(1.35);
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(250, 204, 21, 0));
+  }
+}
+.animate-piece-promote {
+  animation: piece-promote 550ms ease-out;
+}
+
+/* Ô chứa vua đang bị chiếu: quầng đỏ nhấp nháy. */
+@keyframes king-check {
+  0%,
+  100% {
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.85) 0%, rgba(239, 68, 68, 0) 70%);
+  }
+  50% {
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0) 70%);
+  }
+}
+.animate-king-check {
+  animation: king-check 450ms ease-in-out 2;
+}
+
+/* Toàn bàn cờ rung nhẹ khi có chiếu tướng. */
+@keyframes board-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+.animate-board-shake {
+  animation: board-shake 400ms ease-in-out;
+}
+

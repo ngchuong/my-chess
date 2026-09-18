@@ -1,9 +1,12 @@
 import { AI_COLOR, colorLabel, coordsToSquare } from '../../lib/boardUtils';
 import { useAIOpponent } from '../../hooks/useAIOpponent';
+import { useCheckAlert } from '../../hooks/useCheckAlert';
 import { useChessClock } from '../../hooks/useChessClock';
 import { useChessGame } from '../../hooks/useChessGame';
 import { useMoveSelection } from '../../hooks/useMoveSelection';
+import { useMoveSound } from '../../hooks/useMoveSound';
 import { usePremove } from '../../hooks/usePremove';
+import { useSoundSettings } from '../../hooks/useSoundSettings';
 import type { GameSettings } from '../../types/game';
 import Button from '../ui/Button';
 import Board from './Board';
@@ -24,8 +27,9 @@ const DIFFICULTY_LABELS: Record<GameSettings['difficulty'], string> = {
 };
 
 export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
-    const { game, lastMove, applyMove, resetGame: resetChessGame } = useChessGame();
+    const { game, lastMove, pieces, applyMove, resetGame: resetChessGame } = useChessGame();
     const { whiteTime, blackTime, flagFall, resetClock } = useChessClock(game, settings.timeControlMinutes);
+    const { muted, toggleMuted, playMove, playCapture, playCheck } = useSoundSettings();
 
     const isMatchOver = game.isGameOver() || flagFall !== null;
 
@@ -34,6 +38,9 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         usePremove(game, applyMove, settings.mode, isMatchOver);
     const { selectedSquare, possibleMoves, handleSquareClick: handleNormalClick, clearSelection } =
         useMoveSelection(game, applyMove);
+
+    useMoveSound(lastMove, playMove, playCapture);
+    const { isFlashing: isCheckFlashing, checkedKingSquare } = useCheckAlert(game, pieces, playCheck);
 
     const resetGame = () => {
         resetChessGame();
@@ -99,7 +106,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white select-none p-4">
-            <TopBar modeLabel={modeLabel} onExit={onExit} />
+            <TopBar modeLabel={modeLabel} onExit={onExit} muted={muted} onToggleMuted={toggleMuted} />
 
             <GameStatus
                 statusText={getGameStatus()}
@@ -111,13 +118,15 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
             <ClockPanel whiteTime={whiteTime} blackTime={blackTime} turn={game.turn()} isMatchOver={isMatchOver} />
 
             <Board
-                game={game}
+                pieces={pieces}
                 onSquareClick={handleSquareClick}
                 selectedSquare={selectedSquare}
                 possibleMoves={possibleMoves}
                 lastMove={lastMove}
                 premoveFrom={premoveFrom}
                 premove={premove}
+                checkedKingSquare={checkedKingSquare}
+                isCheckFlashing={isCheckFlashing}
             />
 
             <Button variant="primary" size="md" className="mt-6" onClick={resetGame}>
