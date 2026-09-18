@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import type { GameSettings, GameMode, Difficulty, TimeControlMinutes } from '../../types/game';
+import Button from '../ui/Button';
+import OptionGroup from './OptionGroup';
+
+const MODE_OPTIONS: { label: string; value: GameMode }[] = [
+    { label: '2 người', value: 'pvp' },
+    { label: 'Đấu với máy', value: 'pve' },
+];
 
 const TIME_OPTIONS: { label: string; value: TimeControlMinutes }[] = [
     { label: 'Không giới hạn', value: null },
@@ -18,7 +25,7 @@ const DIFFICULTY_OPTIONS: { label: string; value: Difficulty }[] = [
 ];
 
 interface GameMenuProps {
-    onStart: (settings: GameSettings) => void;
+    readonly onStart: (settings: GameSettings) => void;
 }
 
 export default function GameMenu({ onStart }: GameMenuProps) {
@@ -28,69 +35,20 @@ export default function GameMenu({ onStart }: GameMenuProps) {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
-            <h1 className="text-3xl font-bold mb-8 tracking-wide text-slate-100">Cờ Vua</h1>
+            <h1 className="text-3xl font-bold mb-8 tracking-wide text-slate-100">Chuong's Chess</h1>
 
             <div className="w-full max-w-sm bg-slate-800 rounded-xl shadow-2xl p-6 space-y-6">
-                <div>
-                    <h2 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wider">Chế độ chơi</h2>
-                    <div className="grid grid-cols-2 gap-2">
-                        <button
-                            onClick={() => setMode('pvp')}
-                            className={`py-2.5 rounded-lg font-medium transition-colors cursor-pointer ${mode === 'pvp' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
-                        >
-                            2 người
-                        </button>
-                        <button
-                            onClick={() => setMode('pve')}
-                            className={`py-2.5 rounded-lg font-medium transition-colors cursor-pointer ${mode === 'pve' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
-                        >
-                            Đấu với máy
-                        </button>
-                    </div>
-                </div>
+                <OptionGroup label="Chế độ chơi" options={MODE_OPTIONS} value={mode} onChange={setMode} columns={2} />
 
                 {mode === 'pve' && (
-                    <div>
-                        <h2 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wider">Độ khó</h2>
-                        <div className="grid grid-cols-3 gap-2">
-                            {DIFFICULTY_OPTIONS.map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => setDifficulty(opt.value)}
-                                    className={`py-2.5 rounded-lg font-medium text-sm transition-colors cursor-pointer ${difficulty === opt.value ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                        }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <OptionGroup label="Độ khó" options={DIFFICULTY_OPTIONS} value={difficulty} onChange={setDifficulty} columns={3} />
                 )}
 
-                <div>
-                    <h2 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wider">Thời gian</h2>
-                    <div className="grid grid-cols-3 gap-2">
-                        {TIME_OPTIONS.map((opt) => (
-                            <button
-                                key={opt.label}
-                                onClick={() => setTimeControlMinutes(opt.value)}
-                                className={`py-2 rounded-lg font-medium text-sm transition-colors cursor-pointer ${timeControlMinutes === opt.value ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <OptionGroup label="Thời gian" options={TIME_OPTIONS} value={timeControlMinutes} onChange={setTimeControlMinutes} columns={3} />
 
-                <button
-                    onClick={() => onStart({ mode, difficulty, timeControlMinutes })}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-md transition-all active:scale-95 cursor-pointer text-lg"
-                >
+                <Button variant="primary" size="lg" fullWidth onClick={() => onStart({ mode, difficulty, timeControlMinutes })}>
                     Bắt đầu
-                </button>
+                </Button>
             </div>
         </div>
     );

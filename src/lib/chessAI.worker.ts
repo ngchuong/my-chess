@@ -1,18 +1,11 @@
 import { Chess } from 'chess.js';
 import { getAIMove } from './chessAI';
 import type { Difficulty } from '../types/game';
+import type { AIWorkerMove } from '../types/chess';
 
 interface AIWorkerRequest {
     fen: string;
     difficulty: Difficulty;
-}
-
-interface AIWorkerMove {
-    from: string;
-    to: string;
-    promotion?: string;
-    san: string;
-    color: 'w' | 'b';
 }
 
 // Tránh phụ thuộc lib "webworker" của TypeScript (xung đột với lib "DOM" của app
