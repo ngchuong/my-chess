@@ -3,7 +3,7 @@ import { QUALITY_DOT_CLASSES } from './qualityMeta';
 
 interface MoveListProps {
     readonly moveHistory: readonly MoveRecord[];
-    readonly analysis: readonly MoveAnalysis[] | null;
+    readonly analysis: readonly (MoveAnalysis | undefined)[];
     readonly ply: number;
     readonly onSelectPly: (ply: number) => void;
 }
@@ -50,7 +50,7 @@ export default function MoveList({ moveHistory, analysis, ply, onSelectPly }: Mo
                     <span className="text-xs text-slate-500 text-right pr-1">{row.moveNumber}.</span>
                     <MoveCell
                         record={row.white}
-                        quality={analysis?.[row.whitePly - 1]?.quality}
+                        quality={analysis[row.whitePly - 1]?.quality}
                         ply={row.whitePly}
                         isActive={ply === row.whitePly}
                         onSelectPly={onSelectPly}
@@ -58,7 +58,7 @@ export default function MoveList({ moveHistory, analysis, ply, onSelectPly }: Mo
                     {row.black ? (
                         <MoveCell
                             record={row.black}
-                            quality={analysis?.[row.blackPly - 1]?.quality}
+                            quality={analysis[row.blackPly - 1]?.quality}
                             ply={row.blackPly}
                             isActive={ply === row.blackPly}
                             onSelectPly={onSelectPly}

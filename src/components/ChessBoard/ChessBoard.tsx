@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AI_COLOR, colorLabel, coordsToSquare } from '../../lib/boardUtils';
+import { CAPTURE_CLEANUP_MS, MOVE_SLIDE_MS, PROMOTE_CLEANUP_MS } from '../../lib/animation';
 import { useAIOpponent } from '../../hooks/useAIOpponent';
 import { useCheckAlert } from '../../hooks/useCheckAlert';
 import { useChessClock } from '../../hooks/useChessClock';
@@ -8,6 +9,7 @@ import { useMoveSelection } from '../../hooks/useMoveSelection';
 import { useMoveSound } from '../../hooks/useMoveSound';
 import { usePremove } from '../../hooks/usePremove';
 import { useSoundSettings } from '../../hooks/useSoundSettings';
+import type { LastMove } from '../../types/chess';
 import type { GameSettings } from '../../types/game';
 import Button from '../ui/Button';
 import GameReview from '../GameReview/GameReview';
@@ -28,6 +30,15 @@ const DIFFICULTY_LABELS: Record<GameSettings['difficulty'], string> = {
     hard: 'Khó',
 };
 
+// Chờ animation của nước đi cuối (trượt/ăn quân/phong cấp) phát xong rồi mới hiện
+// modal kết thúc trận — tránh che mất nước chiếu hết ngay khi nó vừa được thực hiện.
+function getGameOverModalDelayMs(lastMove: LastMove | null): number {
+    if (!lastMove) return 0;
+    if (lastMove.captured) return CAPTURE_CLEANUP_MS;
+    if (lastMove.promotion) return PROMOTE_CLEANUP_MS;
+    return MOVE_SLIDE_MS + 50;
+}
+
 export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     const { game, lastMove, pieces, moveHistory, applyMove, resetGame: resetChessGame } = useChessGame();
     const [isReviewing, setIsReviewing] = useState(false);
@@ -35,6 +46,24 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     const { muted, toggleMuted, playMove, playCapture, playCheck } = useSoundSettings();
 
     const isMatchOver = game.isGameOver() || flagFall !== null;
+    const [showGameOverModal, setShowGameOverModal] = useState(false);
+
+    useEffect(() => {
+        if (!isMatchOver) {
+            setShowGameOverModal(false);
+            return;
+        }
+
+        // Hết giờ dừng ván ngay lập tức, không có nước đi/animation nào đang chạy
+        // nên hiện modal luôn; còn chiếu hết/hòa cờ thì chờ animation nước cuối.
+        if (flagFall !== null) {
+            setShowGameOverModal(true);
+            return;
+        }
+
+        const timer = setTimeout(() => setShowGameOverModal(true), getGameOverModalDelayMs(lastMove));
+        return () => clearTimeout(timer);
+    }, [isMatchOver, flagFall, lastMove]);
 
     useAIOpponent(game, applyMove, settings.mode, settings.difficulty, isMatchOver);
     const { isPremoveMode, premoveFrom, premove, handlePremoveSquareClick, cancelPremove, resetPremove } =
@@ -51,6 +80,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         resetPremove();
         clearSelection();
         setIsReviewing(false);
+        setShowGameOverModal(false);
     };
 
     const handleSquareClick = (row: number, col: number) => {
@@ -142,7 +172,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
             </Button>
 
             <GameOverModal
-                info={getGameOverInfo()}
+                info={showGameOverModal ? getGameOverInfo() : null}
                 onNewGame={resetGame}
                 onExit={onExit}
                 onReviewGame={() => setIsReviewing(true)}

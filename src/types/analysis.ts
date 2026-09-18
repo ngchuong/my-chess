@@ -17,3 +17,10 @@ export interface MoveAnalysis extends MoveRecord {
     centipawnLoss: number;
     bestSan: string;
 }
+
+// Worker phân tích từng nước một và báo kết quả ngay khi xong (thay vì tính hết cả
+// ván rồi mới gửi một lần), để danh sách nước đi lên dần thay vì đợi rồi hiện hết
+// cùng lúc.
+export type AnalysisProgressMessage =
+    | { type: 'progress'; index: number; result: MoveAnalysis }
+    | { type: 'done' };

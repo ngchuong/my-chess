@@ -21,15 +21,18 @@ export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
         useGameReview(moveHistory);
 
     const pieces = useMemo(() => piecesFromFen(currentFen), [currentFen]);
-    const currentAnalysis = ply > 0 ? analysis?.[ply - 1] : undefined;
+    const currentAnalysis = ply > 0 ? analysis[ply - 1] : undefined;
 
+    // Đếm dần theo số nước đã được worker chấm điểm xong — hiện số tăng dần thay vì
+    // đợi phân tích xong hết cả ván rồi mới hiện một lần.
     const summary = useMemo(() => {
-        if (!analysis) return null;
+        const analyzed = analysis.filter((m): m is NonNullable<typeof m> => m !== undefined);
+        if (analyzed.length === 0) return null;
         return {
-            excellent: analysis.filter((m) => m.quality === 'excellent').length,
-            great: analysis.filter((m) => m.quality === 'great').length,
-            normal: analysis.filter((m) => m.quality === 'normal').length,
-            bad: analysis.filter((m) => m.quality === 'bad').length,
+            excellent: analyzed.filter((m) => m.quality === 'excellent').length,
+            great: analyzed.filter((m) => m.quality === 'great').length,
+            normal: analyzed.filter((m) => m.quality === 'normal').length,
+            bad: analyzed.filter((m) => m.quality === 'bad').length,
         };
     }, [analysis]);
 

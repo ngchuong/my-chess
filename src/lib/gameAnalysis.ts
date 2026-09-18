@@ -17,23 +17,26 @@ function classify(centipawnLoss: number): MoveAnalysis['quality'] {
     return 'bad';
 }
 
-// Phân tích toàn bộ ván đấu: với mỗi nước đã đi, so sánh với nước tốt nhất engine
-// tìm được ở cùng vị trí và xếp loại theo mức thiệt hại (centipawn loss).
+// Phân tích một nước đã đi: so sánh với nước tốt nhất engine tìm được ở cùng vị trí
+// và xếp loại theo mức thiệt hại (centipawn loss).
+export function analyzeMove(record: MoveRecord): MoveAnalysis {
+    const evaluation = evaluateMove(record.fenBefore, record, ANALYSIS_DEPTH);
+
+    if (!evaluation) {
+        return { ...record, quality: 'normal', centipawnLoss: 0, bestSan: record.san };
+    }
+
+    const centipawnLoss = Math.max(0, evaluation.bestScoreForMover - evaluation.playedScoreForMover);
+
+    return {
+        ...record,
+        quality: classify(centipawnLoss),
+        centipawnLoss,
+        bestSan: evaluation.bestSan,
+    };
+}
+
+// Phân tích toàn bộ ván đấu cùng lúc (dùng khi không cần cập nhật tiến độ dần).
 export function analyzeGame(history: MoveRecord[]): MoveAnalysis[] {
-    return history.map((record) => {
-        const evaluation = evaluateMove(record.fenBefore, record, ANALYSIS_DEPTH);
-
-        if (!evaluation) {
-            return { ...record, quality: 'normal', centipawnLoss: 0, bestSan: record.san };
-        }
-
-        const centipawnLoss = Math.max(0, evaluation.bestScoreForMover - evaluation.playedScoreForMover);
-
-        return {
-            ...record,
-            quality: classify(centipawnLoss),
-            centipawnLoss,
-            bestSan: evaluation.bestSan,
-        };
-    });
+    return history.map(analyzeMove);
 }
