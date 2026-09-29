@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { difficultyLabel } from '../../lib/engine/difficulty';
 import type { GameSettings, GameMode, Difficulty, TimeControlMinutes } from '../../types/game';
 import Button from '../ui/Button';
 import OptionGroup from './OptionGroup';
@@ -18,11 +19,10 @@ const TIME_OPTIONS: { label: string; value: TimeControlMinutes }[] = [
     { label: '30 phút', value: 30 },
 ];
 
-const DIFFICULTY_OPTIONS: { label: string; value: Difficulty }[] = [
-    { label: 'Dễ', value: 'easy' },
-    { label: 'Trung bình', value: 'medium' },
-    { label: 'Khó', value: 'hard' },
-];
+// Nhãn kèm Elo để người chơi biết mình chọn mức nào — độ khó được đặt bằng UCI_Elo
+// của Stockfish chứ không phải giới hạn độ sâu tìm kiếm.
+const DIFFICULTY_OPTIONS: { label: string; value: Difficulty }[] = (['easy', 'medium', 'hard'] as const)
+    .map((value) => ({ label: difficultyLabel(value), value }));
 
 const HINT_OPTIONS: { label: string; value: boolean }[] = [
     { label: 'Bật', value: true },

@@ -25,14 +25,6 @@ export interface PendingPromotion {
     color: PieceColor;
 }
 
-export interface AIWorkerMove {
-    from: string;
-    to: string;
-    promotion?: string;
-    san: string;
-    color: PieceColor;
-}
-
 // Một quân cờ được theo dõi xuyên suốt ván đấu bằng `id` cố định (gán từ ô xuất
 // phát), phục vụ animation trượt mượt khi quân di chuyển giữa các ô.
 export interface AnimatedPiece {

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Chess } from 'chess.js';
-import type { AnalysisProgressMessage, MoveAnalysis, MoveRecord } from '../types/analysis';
+import { analyzeGame } from '../lib/gameAnalysis';
+import { stopSearch } from '../lib/engine/stockfish';
+import type { MoveAnalysis, MoveRecord } from '../types/analysis';
 
 const START_FEN = new Chess().fen();
 
-// Chạy phân tích toàn bộ ván đấu (vừa kết thúc) trong Web Worker để không treo
-// giao diện, đồng thời quản lý việc "tua" qua các nước để xem lại từng vị trí.
-// `ply = 0` là vị trí xuất phát, `ply = n` là vị trí sau nước thứ n. Mở màn hình xem
-// lại ở nước đi đầu tiên (ply = 1) thay vì vị trí cuối ván, vì đó là nơi người xem
+// Chấm điểm toàn bộ ván đấu vừa kết thúc bằng Stockfish (chạy trong worker của engine
+// nên không treo giao diện), đồng thời quản lý việc "tua" qua các nước để xem lại từng
+// vị trí. `ply = 0` là vị trí xuất phát, `ply = n` là vị trí sau nước thứ n. Mở màn hình
+// xem lại ở nước đi đầu tiên (ply = 1) thay vì vị trí cuối ván, vì đó là nơi người xem
 // thường muốn bắt đầu duyệt lại.
 export function useGameReview(moveHistory: readonly MoveRecord[]) {
     const [analysis, setAnalysis] = useState<(MoveAnalysis | undefined)[]>(() => new Array(moveHistory.length));
@@ -23,23 +25,29 @@ export function useGameReview(moveHistory: readonly MoveRecord[]) {
         }
 
         setIsAnalyzing(true);
-        const worker = new Worker(new URL('../lib/gameAnalysis.worker.ts', import.meta.url), { type: 'module' });
+        let active = true;
 
-        worker.onmessage = (event: MessageEvent<AnalysisProgressMessage>) => {
-            const message = event.data;
-            if (message.type === 'done') {
-                setIsAnalyzing(false);
-                return;
-            }
-            setAnalysis((prev) => {
-                const next = [...prev];
-                next[message.index] = message.result;
-                return next;
-            });
+        analyzeGame(
+            moveHistory,
+            (index, result) => {
+                if (!active) return;
+                setAnalysis((prev) => {
+                    const next = [...prev];
+                    next[index] = result;
+                    return next;
+                });
+            },
+            () => active,
+        ).finally(() => {
+            if (active) setIsAnalyzing(false);
+        });
+
+        return () => {
+            active = false;
+            // Rời màn hình xem lại giữa chừng: cắt luôn lượt tìm kiếm đang chạy để
+            // không đốt CPU và để các yêu cầu khác được phục vụ ngay.
+            stopSearch();
         };
-        worker.postMessage({ history: moveHistory });
-
-        return () => worker.terminate();
     }, [moveHistory]);
 
     const goTo = (target: number) => setPly(Math.min(Math.max(target, 0), moveHistory.length));
