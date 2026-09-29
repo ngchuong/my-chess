@@ -8,6 +8,8 @@ interface SquareProps {
     readonly isPremoveFrom: boolean;
     readonly isPremoveQueued: boolean;
     readonly isCheckedKing: boolean;
+    readonly isHintFrom: boolean;
+    readonly isHintTo: boolean;
     readonly onClick: () => void;
 }
 
@@ -21,6 +23,8 @@ function Square({
     isPremoveFrom,
     isPremoveQueued,
     isCheckedKing,
+    isHintFrom,
+    isHintTo,
     onClick,
 }: SquareProps) {
     return (
@@ -47,6 +51,15 @@ function Square({
 
             {isPossibleMove && (
                 <div className="absolute w-4 h-4 bg-black/30 rounded-full z-10 pointer-events-none" />
+            )}
+
+            {/* Nước đi được gợi ý: ô xuất phát viền nét đứt, ô đến viền liền và tô nhẹ —
+                nhìn là biết đi quân nào tới đâu. Màu xanh lá tách biệt với vàng (nước đi
+                vừa xong), xanh dương (premove) và đỏ (đang bị chiếu). */}
+            {(isHintFrom || isHintTo) && (
+                <div
+                    className={`absolute inset-0 z-20 pointer-events-none animate-hint-pulse border-2 ${isHintTo ? 'border-emerald-500 bg-emerald-400/35' : 'border-emerald-500/80 border-dashed'}`}
+                />
             )}
         </button>
     );

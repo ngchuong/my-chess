@@ -57,6 +57,7 @@ export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
                         premove={null}
                         checkedKingSquare={null}
                         isCheckFlashing={false}
+                        hint={null}
                     />
 
                     <div className="flex items-center gap-2">

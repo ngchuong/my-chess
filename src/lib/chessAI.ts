@@ -1,7 +1,7 @@
 import { Chess, type Move } from 'chess.js';
 import type { Difficulty } from '../types/game';
 
-const PIECE_VALUES: Record<string, number> = {
+export const PIECE_VALUES: Record<string, number> = {
     p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000,
 };
 
@@ -133,6 +133,21 @@ function pieceSquareValue(type: string, color: 'w' | 'b', squareIndex: number): 
     return table[index];
 }
 
+// Đổi ký hiệu ô ("e4") sang chỉ số 0..63 dùng trong các bảng điểm vị trí — cùng
+// thứ tự với `game.board()`: ô 0 là a8, ô 63 là h1.
+function squareIndexOf(square: string): number {
+    const file = square.codePointAt(0)! - 'a'.codePointAt(0)!;
+    const rank = Number(square[1]);
+    return (8 - rank) * 8 + file;
+}
+
+// Chênh lệch điểm vị trí khi một quân đi từ ô này sang ô khác (dương = ô mới tốt hơn
+// theo piece-square table). Dùng để giải thích một nước đi "im lặng" — không ăn quân,
+// không chiếu — bằng đúng tiêu chí mà engine đã dùng để chấm nó.
+export function pieceSquareGain(type: string, color: 'w' | 'b', from: string, to: string): number {
+    return pieceSquareValue(type, color, squareIndexOf(to)) - pieceSquareValue(type, color, squareIndexOf(from));
+}
+
 function evaluateBoard(game: Chess): number {
     let score = 0;
     const board = game.board();
@@ -230,25 +245,42 @@ function minimax(game: Chess, depth: number, alpha: number, beta: number, maximi
     return best;
 }
 
+interface ScoredMove {
+    move: Move;
+    // Điểm của vị trí sau nước đi, luôn theo góc nhìn của Trắng (dương = Trắng lợi).
+    scoreWhite: number;
+}
+
 // Tìm nước đi tốt nhất ở một độ sâu cố định; trả về null nếu bị ngắt giữa chừng vì hết giờ.
-function searchAtDepth(game: Chess, depth: number, orderedMoves: Move[], maximizing: boolean, ctx: SearchContext): Move | null {
-    let bestMove: Move | null = null;
-    let bestScore = maximizing ? -Infinity : Infinity;
+//
+// Cửa sổ alpha-beta được thu hẹp dần ngay tại tầng gốc: sau khi đã có một nước tốt nhất
+// tạm thời, những nước sau chỉ cần trả lời "có hơn nước đó không" chứ không cần điểm
+// chính xác. Nhờ vậy tìm kiếm nhanh hơn nhiều lần so với việc xét mỗi nước gốc bằng một
+// cửa sổ đầy. Điểm của nước *được chọn* vẫn luôn chính xác (ở tầng gốc chỉ có thể
+// fail-low, mà nước fail-low thì đã bị loại).
+function searchAtDepth(game: Chess, depth: number, orderedMoves: Move[], maximizing: boolean, ctx: SearchContext): ScoredMove | null {
+    let best: ScoredMove | null = null;
+    let alpha = -Infinity;
+    let beta = Infinity;
 
     for (const move of orderedMoves) {
         applyMove(game, move);
-        const score = minimax(game, depth - 1, -Infinity, Infinity, !maximizing, ctx);
+        const scoreWhite = minimax(game, depth - 1, alpha, beta, !maximizing, ctx);
         game.undo();
 
         if (ctx.aborted) return null;
 
-        if (bestMove === null || (maximizing ? score > bestScore : score < bestScore)) {
-            bestScore = score;
-            bestMove = move;
+        if (best === null || (maximizing ? scoreWhite > best.scoreWhite : scoreWhite < best.scoreWhite)) {
+            best = { move, scoreWhite };
+            if (maximizing) {
+                alpha = scoreWhite;
+            } else {
+                beta = scoreWhite;
+            }
         }
     }
 
-    return bestMove;
+    return best;
 }
 
 // Trả về nước đi AI chọn cho bên đang tới lượt trong `game`. Dùng tìm kiếm sâu dần
@@ -271,10 +303,10 @@ export function getAIMove(game: Chess, difficulty: Difficulty): Move | null {
 
     for (let depth = 1; depth <= maxDepth; depth++) {
         const ctx: SearchContext = { deadline, aborted: false };
-        const moveAtDepth = searchAtDepth(game, depth, orderedMoves, maximizing, ctx);
-        if (moveAtDepth === null) break;
+        const bestAtDepth = searchAtDepth(game, depth, orderedMoves, maximizing, ctx);
+        if (bestAtDepth === null) break;
 
-        bestMove = moveAtDepth;
+        bestMove = bestAtDepth.move;
         if (Date.now() >= deadline) break;
     }
 
@@ -291,6 +323,74 @@ export interface MoveEvaluation {
 
 const ANALYSIS_TIME_BUDGET_MS = 2000;
 
+// Chấm điểm mọi nước đi hợp lệ tại vị trí hiện tại ở một độ sâu cố định, mỗi nước bằng
+// một cửa sổ alpha-beta đầy. Chậm hơn `searchAtDepth` (không cắt nhánh ở tầng gốc) nhưng
+// bắt buộc phải như vậy khi cần điểm *chính xác* của từng nước — cụ thể là để tính
+// centipawn loss của nước người chơi đã đi khi chấm điểm ván đấu.
+function scoreMoves(game: Chess, depth: number, ctx: SearchContext): ScoredMove[] {
+    const moves = orderMoves(game.moves({ verbose: true }) as Move[]);
+
+    return moves.map((move) => {
+        applyMove(game, move);
+        const nextMaximizing = game.turn() === 'w';
+        const scoreWhite = minimax(game, depth - 1, -Infinity, Infinity, nextMaximizing, ctx);
+        game.undo();
+        return { move, scoreWhite };
+    });
+}
+
+function pickBestForMover(scored: ScoredMove[], moverColor: 'w' | 'b'): ScoredMove {
+    return scored.reduce((best, current) => {
+        const isBetter = moverColor === 'w' ? current.scoreWhite > best.scoreWhite : current.scoreWhite < best.scoreWhite;
+        return isBetter ? current : best;
+    }, scored[0]);
+}
+
+export interface BestMoveResult {
+    move: Move;
+    // Điểm của vị trí sau nước đi, quy về góc nhìn bên vừa đi (dương = bên đó có lợi).
+    scoreForMover: number;
+}
+
+// Nước đi tốt nhất theo engine tại một vị trí, kèm điểm đánh giá của thế cờ sau đó.
+// Khác `getAIMove`: không bao giờ đi ngẫu nhiên (gợi ý cho người chơi thì phải là nước
+// tốt nhất) và trả về cả điểm để bên gọi giải thích được nước đi.
+//
+// Tìm sâu dần và chỉ nhận kết quả của độ sâu chạy xong trọn vẹn: khi hết thời gian,
+// `minimax` trả về điểm tĩnh nên những nước được xét sau đó có điểm vô nghĩa — nhận
+// kết quả dở dang sẽ dẫn tới gợi ý sai (ví dụ bỏ qua cả nước chiếu hết trong 1 nước).
+export function findBestMove(fen: string, maxDepth: number, timeBudgetMs: number): BestMoveResult | null {
+    const game = new Chess(fen);
+    const moves = game.moves({ verbose: true }) as Move[];
+    if (moves.length === 0) return null;
+
+    const moverColor = game.turn();
+    const maximizing = moverColor === 'w';
+    const orderedMoves = orderMoves(moves);
+    const deadline = Date.now() + timeBudgetMs;
+
+    let best: ScoredMove | null = null;
+
+    for (let depth = 1; depth <= maxDepth; depth++) {
+        // Độ sâu 1 không đặt hạn chót: nó luôn nhanh, và phải luôn có một nước để gợi ý
+        // kể cả khi ngân sách thời gian quá ngặt.
+        const ctx: SearchContext = { deadline: depth === 1 ? Infinity : deadline, aborted: false };
+        const bestAtDepth = searchAtDepth(game, depth, orderedMoves, maximizing, ctx);
+
+        if (bestAtDepth === null) break;
+
+        best = bestAtDepth;
+        if (Date.now() >= deadline) break;
+    }
+
+    if (!best) return null;
+
+    return {
+        move: best.move,
+        scoreForMover: moverColor === 'w' ? best.scoreWhite : -best.scoreWhite,
+    };
+}
+
 // So sánh nước đã đi với nước tốt nhất theo engine ở cùng một vị trí (dùng cho
 // tính năng phân tích ván đấu) — điểm luôn quy về góc nhìn của bên vừa đi
 // (dương = có lợi cho bên đó) để dễ tính "centipawn loss".
@@ -301,48 +401,27 @@ export function evaluateMove(
 ): MoveEvaluation | null {
     const game = new Chess(fen);
     const moverColor = game.turn();
-    const moves = orderMoves(game.moves({ verbose: true }) as Move[]);
-    if (moves.length === 0) return null;
-
     const ctx: SearchContext = { deadline: Date.now() + ANALYSIS_TIME_BUDGET_MS, aborted: false };
 
-    let bestScoreWhite = moverColor === 'w' ? -Infinity : Infinity;
-    let bestSan = moves[0].san;
-    let playedScoreWhite = 0;
-    let playedSan = moves[0].san;
-    let playedMoveFound = false;
+    const scored = scoreMoves(game, depth, ctx);
+    if (scored.length === 0) return null;
 
-    for (const move of moves) {
-        applyMove(game, move);
-        const nextMaximizing = game.turn() === 'w';
-        const score = minimax(game, depth - 1, -Infinity, Infinity, nextMaximizing, ctx);
-        game.undo();
-
-        const isBetterForMover = moverColor === 'w' ? score > bestScoreWhite : score < bestScoreWhite;
-        if (isBetterForMover) {
-            bestScoreWhite = score;
-            bestSan = move.san;
-        }
-
-        if (move.from === playedMove.from && move.to === playedMove.to && (move.promotion ?? undefined) === playedMove.promotion) {
-            playedScoreWhite = score;
-            playedSan = move.san;
-            playedMoveFound = true;
-        }
-    }
+    const best = pickBestForMover(scored, moverColor);
+    const played = scored.find(({ move }) =>
+        move.from === playedMove.from && move.to === playedMove.to && (move.promotion ?? undefined) === playedMove.promotion);
 
     // Về lý thuyết nước đã đi luôn phải nằm trong danh sách nước hợp lệ ở đúng vị trí
     // đó (nó đã từng được chess.js chấp nhận lúc chơi thật) — nhưng nếu vì lý do nào
     // đó không khớp được nước nào, trả về null thay vì một centipawnLoss sai lệch.
-    if (!playedMoveFound) return null;
+    if (!played) return null;
 
     const toMoverPerspective = (whiteScore: number) => (moverColor === 'w' ? whiteScore : -whiteScore);
 
     return {
         moverColor,
-        bestScoreForMover: toMoverPerspective(bestScoreWhite),
-        playedScoreForMover: toMoverPerspective(playedScoreWhite),
-        bestSan,
-        playedSan,
+        bestScoreForMover: toMoverPerspective(best.scoreWhite),
+        playedScoreForMover: toMoverPerspective(played.scoreWhite),
+        bestSan: best.move.san,
+        playedSan: played.move.san,
     };
 }

@@ -101,6 +101,21 @@ body {
   animation: king-check 450ms ease-in-out 2;
 }
 
+/* Ô thuộc nước đi được gợi ý: viền mờ dần rồi rõ lại, lặp cho tới khi người chơi đi.
+   Nhịp chậm (1.4s) để thu hút chú ý mà không gây rối mắt khi đang nghĩ nước. */
+@keyframes hint-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-hint-pulse {
+  animation: hint-pulse 1400ms ease-in-out infinite;
+}
+
 /* Toàn bàn cờ rung nhẹ khi có chiếu tướng. */
 @keyframes board-shake {
   0%,

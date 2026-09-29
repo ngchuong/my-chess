@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import type { Square as SquareName } from 'chess.js';
 import { FILES, RANKS, coordsToSquare } from '../../lib/boardUtils';
+import type { MoveHint } from '../../lib/moveHint';
 import type { AnimatedPiece, LastMove, Premove } from '../../types/chess';
 import PieceSprite from './PieceSprite';
 import Square from './Square';
@@ -15,6 +16,7 @@ interface BoardProps {
     readonly premove: Premove | null;
     readonly checkedKingSquare: SquareName | null;
     readonly isCheckFlashing: boolean;
+    readonly hint: MoveHint | null;
 }
 
 // Bàn cờ 8x8 kèm tọa độ ở rìa, co giãn theo chiều rộng màn hình (lưới CSS Grid
@@ -33,6 +35,7 @@ export default function Board({
     premove,
     checkedKingSquare,
     isCheckFlashing,
+    hint,
 }: BoardProps) {
     const activeSelection = selectedSquare ?? premoveFrom;
 
@@ -57,6 +60,8 @@ export default function Board({
                                     isPremoveFrom={premoveFrom === squareNotation}
                                     isPremoveQueued={premove !== null && (premove.from === squareNotation || premove.to === squareNotation)}
                                     isCheckedKing={checkedKingSquare === squareNotation}
+                                    isHintFrom={hint?.from === squareNotation}
+                                    isHintTo={hint?.to === squareNotation}
                                     onClick={() => onSquareClick(rowIndex, colIndex)}
                                 />
                             );

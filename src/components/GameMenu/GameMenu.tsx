@@ -24,6 +24,11 @@ const DIFFICULTY_OPTIONS: { label: string; value: Difficulty }[] = [
     { label: 'Khó', value: 'hard' },
 ];
 
+const HINT_OPTIONS: { label: string; value: boolean }[] = [
+    { label: 'Bật', value: true },
+    { label: 'Tắt', value: false },
+];
+
 interface GameMenuProps {
     readonly onStart: (settings: GameSettings) => void;
 }
@@ -32,6 +37,7 @@ export default function GameMenu({ onStart }: GameMenuProps) {
     const [mode, setMode] = useState<GameMode>('pvp');
     const [difficulty, setDifficulty] = useState<Difficulty>('medium');
     const [timeControlMinutes, setTimeControlMinutes] = useState<TimeControlMinutes>(5);
+    const [showHints, setShowHints] = useState(true);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
@@ -41,12 +47,15 @@ export default function GameMenu({ onStart }: GameMenuProps) {
                 <OptionGroup label="Chế độ chơi" options={MODE_OPTIONS} value={mode} onChange={setMode} columns={2} />
 
                 {mode === 'pve' && (
-                    <OptionGroup label="Độ khó" options={DIFFICULTY_OPTIONS} value={difficulty} onChange={setDifficulty} columns={3} />
+                    <>
+                        <OptionGroup label="Độ khó" options={DIFFICULTY_OPTIONS} value={difficulty} onChange={setDifficulty} columns={3} />
+                        <OptionGroup label="Gợi ý nước đi" options={HINT_OPTIONS} value={showHints} onChange={setShowHints} columns={2} />
+                    </>
                 )}
 
                 <OptionGroup label="Thời gian" options={TIME_OPTIONS} value={timeControlMinutes} onChange={setTimeControlMinutes} columns={3} />
 
-                <Button variant="primary" size="lg" fullWidth onClick={() => onStart({ mode, difficulty, timeControlMinutes })}>
+                <Button variant="primary" size="lg" fullWidth onClick={() => onStart({ mode, difficulty, timeControlMinutes, showHints })}>
                     Bắt đầu
                 </Button>
             </div>

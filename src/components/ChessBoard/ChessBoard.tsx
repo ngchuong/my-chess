@@ -5,6 +5,7 @@ import { useAIOpponent } from '../../hooks/useAIOpponent';
 import { useCheckAlert } from '../../hooks/useCheckAlert';
 import { useChessClock } from '../../hooks/useChessClock';
 import { useChessGame } from '../../hooks/useChessGame';
+import { useMoveHint } from '../../hooks/useMoveHint';
 import { useMoveSelection } from '../../hooks/useMoveSelection';
 import { useMoveSound } from '../../hooks/useMoveSound';
 import { usePremove } from '../../hooks/usePremove';
@@ -17,6 +18,7 @@ import Board from './Board';
 import ClockPanel from './ClockPanel';
 import GameOverModal, { type GameOverInfo } from './GameOverModal';
 import GameStatus from './GameStatus';
+import HintPanel from './HintPanel';
 import PromotionModal from './PromotionModal';
 import TopBar from './TopBar';
 
@@ -68,6 +70,12 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     }, [isMatchOver, flagFall, lastMove]);
 
     useAIOpponent(game, applyMove, settings.mode, settings.difficulty, isMatchOver);
+
+    // Gợi ý chỉ dành cho chế độ đấu với máy: ở PvP, hai người dùng chung một bàn cờ
+    // nên hiện nước tốt nhất sẽ lộ nước đi cho cả hai bên.
+    const isHintEnabled = settings.mode === 'pve' && settings.showHints;
+    const { hint, isHintLoading } = useMoveHint(game, isHintEnabled, isMatchOver);
+
     const {
         isPremoveMode,
         premoveFrom,
@@ -186,7 +194,10 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
                 premove={premove}
                 checkedKingSquare={checkedKingSquare}
                 isCheckFlashing={isCheckFlashing}
+                hint={hint}
             />
+
+            {isHintEnabled && <HintPanel hint={hint} isLoading={isHintLoading} />}
 
             <Button variant="primary" size="md" className="mt-6" onClick={resetGame}>
                 Ván mới
