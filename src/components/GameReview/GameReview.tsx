@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useGameReview } from '../../hooks/useGameReview';
 import { piecesFromFen } from '../../lib/pieceTracking';
 import { colorLabel } from '../../lib/boardUtils';
-import type { MoveRecord } from '../../types/analysis';
+import { MOVE_QUALITIES, type MoveRecord } from '../../types/analysis';
 import Button from '../ui/Button';
 import Board from '../ChessBoard/Board';
 import MoveList from './MoveList';
@@ -14,8 +14,8 @@ interface GameReviewProps {
 }
 
 // Xem lại ván đấu vừa kết thúc: tua qua từng nước trên bàn cờ tĩnh, kèm engine tự
-// chấm điểm mỗi nước (Tệ/Bình thường/Tốt/Xuất sắc) so với nước tốt nhất tìm được
-// ở cùng vị trí. Phân tích chạy nền trong Web Worker nên không treo giao diện.
+// chấm điểm mỗi nước (từ Tốt nhất tới Nước hớ) theo cơ hội thắng bị mất so với nước tốt
+// nhất tìm được ở cùng vị trí. Phân tích chạy nền trong Web Worker nên không treo giao diện.
 export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
     const { analysis, isAnalyzing, ply, currentFen, currentMove, goToStart, goToEnd, goPrev, goNext, goTo } =
         useGameReview(moveHistory);
@@ -23,17 +23,19 @@ export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
     const pieces = useMemo(() => piecesFromFen(currentFen), [currentFen]);
     const currentAnalysis = ply > 0 ? analysis[ply - 1] : undefined;
 
-    // Đếm dần theo số nước đã được worker chấm điểm xong — hiện số tăng dần thay vì
-    // đợi phân tích xong hết cả ván rồi mới hiện một lần.
+    // Đếm dần theo số nước đã được engine chấm điểm xong — hiện số tăng dần thay vì
+    // đợi phân tích xong hết cả ván rồi mới hiện một lần. Tách riêng từng bên, vì gộp
+    // nước của người chơi với nước của máy thì con số không nói lên điều gì.
     const summary = useMemo(() => {
         const analyzed = analysis.filter((m): m is NonNullable<typeof m> => m !== undefined);
         if (analyzed.length === 0) return null;
-        return {
-            excellent: analyzed.filter((m) => m.quality === 'excellent').length,
-            great: analyzed.filter((m) => m.quality === 'great').length,
-            normal: analyzed.filter((m) => m.quality === 'normal').length,
-            bad: analyzed.filter((m) => m.quality === 'bad').length,
-        };
+
+        const counts = (color: 'w' | 'b') =>
+            MOVE_QUALITIES.map((quality) => ({
+                quality,
+                count: analyzed.filter((m) => m.color === color && m.quality === quality).length,
+            }));
+        return { w: counts('w'), b: counts('b') };
     }, [analysis]);
 
     return (
@@ -77,7 +79,7 @@ export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
                                         <span className={QUALITY_TEXT_CLASSES[currentAnalysis.quality]}>
                                             {QUALITY_LABELS[currentAnalysis.quality]}
                                         </span>
-                                        {currentAnalysis.quality !== 'excellent' && currentAnalysis.bestSan !== currentAnalysis.san && (
+                                        {currentAnalysis.quality !== 'best' && currentAnalysis.bestSan !== currentAnalysis.san && (
                                             <span className="text-slate-500"> (tốt nhất: {currentAnalysis.bestSan})</span>
                                         )}
                                     </>
@@ -92,12 +94,24 @@ export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
                         <p className="text-sm text-slate-400 text-center">Đang phân tích ván đấu...</p>
                     )}
                     {summary && (
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs justify-center border-b border-slate-700 pb-2">
-                            <span className={QUALITY_TEXT_CLASSES.excellent}>Xuất sắc: {summary.excellent}</span>
-                            <span className={QUALITY_TEXT_CLASSES.great}>Tốt: {summary.great}</span>
-                            <span className={QUALITY_TEXT_CLASSES.normal}>Bình thường: {summary.normal}</span>
-                            <span className={QUALITY_TEXT_CLASSES.bad}>Tệ: {summary.bad}</span>
-                        </div>
+                        <table className="text-xs border-b border-slate-700 pb-2 w-full">
+                            <thead>
+                                <tr className="text-slate-500">
+                                    <th />
+                                    <th className="font-normal text-right">{colorLabel('w')}</th>
+                                    <th className="font-normal text-right">{colorLabel('b')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {MOVE_QUALITIES.map((quality, i) => (
+                                    <tr key={quality} className={QUALITY_TEXT_CLASSES[quality]}>
+                                        <td>{QUALITY_LABELS[quality]}</td>
+                                        <td className="text-right tabular-nums">{summary.w[i].count}</td>
+                                        <td className="text-right tabular-nums">{summary.b[i].count}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     )}
                     {moveHistory.length === 0 ? (
                         <p className="text-sm text-slate-500 text-center">Ván đấu chưa có nước đi nào.</p>

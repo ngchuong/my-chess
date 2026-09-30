@@ -29,4 +29,6 @@ export const HINT_MOVETIME_MS = 500;
 
 // Chấm điểm ván đấu dùng độ sâu cố định thay vì thời gian, để mọi nước trong ván được
 // xét ở cùng một mức và so sánh với nhau mới công bằng (máy nhanh/chậm không đổi kết quả).
-export const REVIEW_DEPTH = 12;
+// Độ sâu 12 bỏ sót khá nhiều đòn chiến thuật (nước hớ bị chấm là tốt); 14 bắt được phần
+// lớn trong khi chỉ tốn ~0,15s mỗi vị trí ở bản lite.
+export const REVIEW_DEPTH = 14;

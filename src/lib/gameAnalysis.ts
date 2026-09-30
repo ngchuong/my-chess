@@ -1,17 +1,36 @@
 import { Chess } from 'chess.js';
 import { REVIEW_DEPTH } from './engine/difficulty';
 import { MATE_SCORE_CP, analyse, parseUciMove } from './engine/stockfish';
-import type { MoveAnalysis, MoveRecord } from '../types/analysis';
+import type { MoveAnalysis, MoveQuality, MoveRecord } from '../types/analysis';
 
-const EXCELLENT_MAX_LOSS = 10;
-const GREAT_MAX_LOSS = 40;
-const NORMAL_MAX_LOSS = 120;
+// Chấm theo cơ hội thắng thay vì centipawn thô, giống cách lichess/chess.com làm: mất
+// 100cp khi thế cờ cân bằng là sai lầm thật, nhưng mất 100cp khi đang hơn cả con Xe thì
+// gần như không đổi kết quả ván. Hệ số là đường cong lichess khớp từ dữ liệu ván thật.
+const WIN_CHANCE_SLOPE = 0.00368208;
 
-function classify(centipawnLoss: number): MoveAnalysis['quality'] {
-    if (centipawnLoss <= EXCELLENT_MAX_LOSS) return 'excellent';
-    if (centipawnLoss <= GREAT_MAX_LOSS) return 'great';
-    if (centipawnLoss <= NORMAL_MAX_LOSS) return 'normal';
-    return 'bad';
+function winChance(scoreCp: number): number {
+    return 100 / (1 + Math.exp(-WIN_CHANCE_SLOPE * scoreCp));
+}
+
+// Ngưỡng (theo % cơ hội thắng bị mất) tương tự thang "expected points" của chess.com.
+const EXCELLENT_MAX_LOSS = 2;
+const GOOD_MAX_LOSS = 5;
+const INACCURACY_MAX_LOSS = 10;
+const MISTAKE_MAX_LOSS = 20;
+
+function classify(isBestMove: boolean, winChanceLoss: number): MoveQuality {
+    // "Tốt nhất" chỉ dành cho đúng nước engine chọn, không suy ra từ độ lệch điểm — hai
+    // lượt tìm kiếm độc lập luôn lệch nhau vài centipawn nên so điểm sẽ thưởng nhầm.
+    if (isBestMove) return 'best';
+    if (winChanceLoss <= EXCELLENT_MAX_LOSS) return 'excellent';
+    if (winChanceLoss <= GOOD_MAX_LOSS) return 'good';
+    if (winChanceLoss <= INACCURACY_MAX_LOSS) return 'inaccuracy';
+    if (winChanceLoss <= MISTAKE_MAX_LOSS) return 'mistake';
+    return 'blunder';
+}
+
+function uciOf(record: MoveRecord): string {
+    return `${record.from}${record.to}${record.promotion ?? ''}`;
 }
 
 // Vị trí đã hết nước đi thì engine không trả về điểm nào — tự xác định lấy.
@@ -61,11 +80,13 @@ export async function analyzeGame(
             // đối thủ (giờ mới tới lượt họ). Cộng lại chính là phần lợi thế bị đánh rơi:
             // nước hoàn hảo cho tổng bằng 0, thả con Hậu cho tổng khoảng +900.
             const centipawnLoss = Math.max(0, previous.scoreCp + scoreCp);
+            const winChanceLoss = Math.max(0, winChance(previous.scoreCp) - winChance(-scoreCp));
 
             onProgress(index - 1, {
                 ...record,
-                quality: classify(centipawnLoss),
+                quality: classify(uciOf(record) === previous.bestMove, winChanceLoss),
                 centipawnLoss,
+                winChanceLoss,
                 bestSan: sanOf(record.fenBefore, previous.bestMove) ?? record.san,
             });
         }
