@@ -48,7 +48,7 @@ export default function Button({
     return (
         <button
             type={type}
-            className={`font-semibold transition-all active:scale-95 cursor-pointer touch-manipulation ${SIZE_CLASSES[size]} ${colorClasses} ${fullWidth ? 'w-full' : ''} ${className}`}
+            className={`font-semibold transition-all active:scale-95 cursor-pointer touch-manipulation disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 ${SIZE_CLASSES[size]} ${colorClasses} ${fullWidth ? 'w-full' : ''} ${className}`}
             {...rest}
         >
             {children}

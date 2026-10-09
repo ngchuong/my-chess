@@ -23,7 +23,7 @@ function evalToneClass(scoreCp: number): string {
 // cao đủ cho gợi ý dài nhất trên màn rộng; nội dung xuống dòng nhiều hơn thì cuộn trong khung.
 export default function HintPanel({ hint, isLoading, engineStatus }: HintPanelProps) {
     return (
-        <div className="w-full max-w-120 mt-3 h-40 overflow-y-auto bg-slate-800/60 border border-emerald-500/30 rounded-lg p-3 text-sm">
+        <div className="w-full h-40 shrink-0 overflow-y-auto bg-slate-800/60 border border-emerald-500/30 rounded-lg p-3 text-sm">
             {engineStatus === 'error' && (
                 <p className="text-rose-400">Không tải được engine cờ — gợi ý và máy đối thủ tạm thời không hoạt động.</p>
             )}

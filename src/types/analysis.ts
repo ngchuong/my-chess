@@ -1,7 +1,11 @@
 import type { LastMove } from './chess';
 
 // Thứ tự từ tốt nhất tới tệ nhất — giao diện dựa vào thứ tự này để hiển thị.
-export const MOVE_QUALITIES = ['best', 'excellent', 'good', 'inaccuracy', 'mistake', 'blunder'] as const;
+// Thang chấm giống chess.com: "brilliant" (!!) là nước thí quân đúng, "great" (!) là
+// nước gần như duy nhất giữ được thế cờ, "miss" là bỏ lỡ cơ hội đối thủ vừa trao cho.
+export const MOVE_QUALITIES = [
+    'brilliant', 'great', 'best', 'excellent', 'good', 'inaccuracy', 'mistake', 'miss', 'blunder',
+] as const;
 
 export type MoveQuality = (typeof MOVE_QUALITIES)[number];
 
@@ -21,4 +25,8 @@ export interface MoveAnalysis extends MoveRecord {
     // Phần trăm cơ hội thắng bị đánh rơi (0–100) — thước đo dùng để xếp loại nước đi.
     winChanceLoss: number;
     bestSan: string;
+    // Đánh giá thế cờ sau nước này theo góc nhìn bên Trắng (centipawn), và số nước tới
+    // chiếu hết nếu có (dương = Trắng chiếu hết) — để hiển thị thanh/nhãn đánh giá.
+    evalCp: number;
+    evalMate: number | null;
 }

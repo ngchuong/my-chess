@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type MouseEvent } from 'react';
 
 interface SquareProps {
     readonly isDark: boolean;
@@ -10,7 +10,7 @@ interface SquareProps {
     readonly isCheckedKing: boolean;
     readonly isHintFrom: boolean;
     readonly isHintTo: boolean;
-    readonly onClick: () => void;
+    readonly onClick: (e: MouseEvent<HTMLButtonElement>) => void;
 }
 
 // Một ô của bàn cờ — chỉ lo nền/hiệu ứng highlight và click; quân cờ được vẽ ở

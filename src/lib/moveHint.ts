@@ -12,8 +12,9 @@ export const PIECE_NAMES_VI: Record<PieceSymbol, string> = {
 };
 
 // Giá trị quân quy ước, chỉ dùng để diễn giải (so quân nào đắt hơn quân nào), không
-// tham gia vào việc chọn nước — việc đó đã là của Stockfish.
-const PIECE_VALUES: Record<PieceSymbol, number> = {
+// tham gia vào việc chọn nước — việc đó đã là của Stockfish. Phần chấm điểm ván đấu
+// cũng dùng lại để nhận ra nước thí quân.
+export const PIECE_VALUES: Record<PieceSymbol, number> = {
     p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000,
 };
 
@@ -58,7 +59,7 @@ const nameAt = (game: Chess, square: Square): string => PIECE_NAMES_VI[typeAt(ga
 // công rẻ nhất còn rẻ hơn chính nó (đổi quân là đối thủ có lời). Đây là cách đánh giá
 // xấp xỉ — không xét ghim, quá tải hay chuỗi đổi quân dài — và chỉ dùng để *diễn giải*,
 // không dùng để chọn nước.
-function isEnPrise(game: Chess, square: Square): boolean {
+export function isEnPrise(game: Chess, square: Square): boolean {
     const piece = game.get(square);
     // Vua không bao giờ bị "ăn"; các đòn chiếu đã có lý do riêng.
     if (!piece || piece.type === 'k') return false;

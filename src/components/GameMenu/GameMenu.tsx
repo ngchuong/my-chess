@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { difficultyLabel } from '../../lib/engine/difficulty';
+import type { SavedGame } from '../../lib/savedGame';
 import type { PieceColor } from '../../types/chess';
 import type { GameSettings, GameMode, Difficulty, TimeControlMinutes } from '../../types/game';
 import Button from '../ui/Button';
@@ -45,10 +46,17 @@ const resolveColor = (choice: ColorChoice): PieceColor => {
 };
 
 interface GameMenuProps {
+    readonly savedGame: SavedGame | null;
     readonly onStart: (settings: GameSettings) => void;
+    readonly onResume: (saved: SavedGame) => void;
 }
 
-export default function GameMenu({ onStart }: GameMenuProps) {
+function describeSavedGame({ settings, sanMoves }: SavedGame): string {
+    const mode = settings.mode === 'pve' ? `Đấu với máy — ${difficultyLabel(settings.difficulty)}` : '2 người';
+    return `${mode} · ${Math.ceil(sanMoves.length / 2)} nước`;
+}
+
+export default function GameMenu({ savedGame, onStart, onResume }: GameMenuProps) {
     const [mode, setMode] = useState<GameMode>('pvp');
     const [difficulty, setDifficulty] = useState<Difficulty>('medium');
     const [timeControlMinutes, setTimeControlMinutes] = useState<TimeControlMinutes>(5);
@@ -64,6 +72,15 @@ export default function GameMenu({ onStart }: GameMenuProps) {
             <h1 className="text-3xl font-bold mb-8 tracking-wide text-slate-100">Chuong's Chess</h1>
 
             <div className="w-full max-w-sm bg-slate-800 rounded-xl shadow-2xl p-6 space-y-6">
+                {savedGame && (
+                    <div className="space-y-2 pb-6 border-b border-slate-700">
+                        <Button variant="primary" size="lg" fullWidth onClick={() => onResume(savedGame)}>
+                            Tiếp tục ván đang chơi
+                        </Button>
+                        <p className="text-xs text-slate-400 text-center">{describeSavedGame(savedGame)}</p>
+                    </div>
+                )}
+
                 <OptionGroup label="Chế độ chơi" options={MODE_OPTIONS} value={mode} onChange={setMode} columns={2} />
 
                 {mode === 'pve' && (

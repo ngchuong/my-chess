@@ -32,3 +32,10 @@ export const HINT_MOVETIME_MS = 500;
 // Độ sâu 12 bỏ sót khá nhiều đòn chiến thuật (nước hớ bị chấm là tốt); 14 bắt được phần
 // lớn trong khi chỉ tốn ~0,15s mỗi vị trí ở bản lite.
 export const REVIEW_DEPTH = 14;
+
+// Mỗi vị trí phân tích 2 phương án (MultiPV 2), chậm hơn ~3 lần so với 1 phương án
+// (~0,3s/vị trí) nhưng đáng giá: nước người chơi đi thường nằm trong 2 phương án này,
+// khi đó điểm của nó lấy luôn từ cùng một lượt tìm kiếm với nước tốt nhất — so sánh
+// không còn nhiễu giữa hai lượt tìm kiếm độc lập. Phương án thứ hai còn cho biết nước
+// tốt nhất có phải "gần như duy nhất" không (xếp loại Tuyệt vời).
+export const REVIEW_MULTIPV = 2;

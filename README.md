@@ -3,6 +3,22 @@
 Ứng dụng cờ vua chạy hoàn toàn trong trình duyệt: đấu với máy, gợi ý nước đi kèm lý do,
 và chấm điểm lại cả ván sau khi chơi xong.
 
+## Phát triển
+
+Repo dùng **npm** (`package-lock.json`).
+
+```bash
+npm install
+npm run dev          # chạy app
+npm test             # chạy test (Vitest)
+npm run test:watch   # chạy test, tự chạy lại khi sửa code
+npm run lint
+npm run build
+```
+
+Test nằm cạnh file nguồn (`src/lib/*.test.ts`) và chỉ kiểm tra logic thuần trong `src/lib/`.
+Phần chấm điểm ván đấu được test với engine giả, nên không cần tải Stockfish.
+
 ## Engine
 
 Máy đối thủ, gợi ý và chấm điểm ván đấu đều dùng **Stockfish 19 (bản WASM lite, đơn luồng)**

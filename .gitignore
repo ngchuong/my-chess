@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Repo dùng npm (package-lock.json) — chặn file của trình quản lý gói khác lọt vào
+.pnp.*
+.yarn/
+yarn.lock
+pnpm-lock.yaml

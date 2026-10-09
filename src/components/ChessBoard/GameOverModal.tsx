@@ -11,9 +11,10 @@ interface GameOverModalProps {
     readonly onNewGame: () => void;
     readonly onExit: () => void;
     readonly onReviewGame: () => void;
+    readonly onDownloadPgn: () => void;
 }
 
-export default function GameOverModal({ info, onNewGame, onExit, onReviewGame }: GameOverModalProps) {
+export default function GameOverModal({ info, onNewGame, onExit, onReviewGame, onDownloadPgn }: GameOverModalProps) {
     if (!info) return null;
 
     return (
@@ -26,6 +27,9 @@ export default function GameOverModal({ info, onNewGame, onExit, onReviewGame }:
                 </Button>
                 <Button variant="secondary" onClick={onReviewGame}>
                     Xem lại ván đấu
+                </Button>
+                <Button variant="secondary" onClick={onDownloadPgn}>
+                    Tải PGN
                 </Button>
                 <Button variant="secondary" onClick={onExit}>
                     Về menu

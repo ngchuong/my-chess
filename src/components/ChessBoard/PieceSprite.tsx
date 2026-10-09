@@ -7,6 +7,10 @@ interface PieceSpriteProps {
     readonly piece: AnimatedPiece;
     readonly isSelected: boolean;
     readonly flipped: boolean;
+    // Đang bị kéo: lệch khỏi ô hiện tại theo con trỏ (px), không transition.
+    readonly dragOffset?: { x: number; y: number } | null;
+    // Vừa được thả bằng kéo thả: đặt thẳng vào ô mới, không trượt.
+    readonly skipSlide?: boolean;
 }
 
 function getAnimationDelayMs(effect: AnimatedPiece['effect']): number | undefined {
@@ -18,7 +22,7 @@ function getAnimationDelayMs(effect: AnimatedPiece['effect']): number | undefine
 // Một quân cờ trong lớp phủ animation, đặt tuyệt đối theo % trên bàn cờ 8x8 và
 // transition khi `square` đổi để tạo hiệu ứng trượt. `effect` (nếu có) phát thêm
 // animation "vỡ tan" khi bị ăn hoặc "bừng sáng" khi vừa phong cấp.
-function PieceSprite({ piece, isSelected, flipped }: PieceSpriteProps) {
+function PieceSprite({ piece, isSelected, flipped, dragOffset = null, skipSlide = false }: PieceSpriteProps) {
     const { row, col } = squareToCoords(piece.square, flipped);
     const isCaptured = piece.effect === 'captured';
     const isPromoted = piece.effect === 'promoted';
@@ -34,8 +38,9 @@ function PieceSprite({ piece, isSelected, flipped }: PieceSpriteProps) {
             style={{
                 left: `${col * 12.5}%`,
                 top: `${row * 12.5}%`,
-                zIndex: isCaptured ? 1 : 2,
-                transitionProperty: 'left, top',
+                zIndex: dragOffset ? 30 : isCaptured ? 1 : 2,
+                transform: dragOffset ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : undefined,
+                transitionProperty: dragOffset || skipSlide ? 'none' : 'left, top',
                 transitionDuration: `${MOVE_SLIDE_MS}ms`,
                 animationDelay: animationDelayMs !== undefined ? `${animationDelayMs}ms` : undefined,
             }}
@@ -43,7 +48,7 @@ function PieceSprite({ piece, isSelected, flipped }: PieceSpriteProps) {
             <img
                 src={PIECE_IMAGES[piece.color][piece.type]}
                 alt={`${piece.color} ${piece.type}`}
-                className={`w-[85%] h-[85%] object-contain transition-transform duration-100 ${isSelected ? 'scale-110' : ''}`}
+                className={`w-[85%] h-[85%] object-contain transition-transform duration-100 ${dragOffset ? 'scale-125' : isSelected ? 'scale-110' : ''}`}
                 draggable={false}
             />
         </div>
