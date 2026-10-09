@@ -6,6 +6,7 @@ import type { AnimatedPiece } from '../../types/chess';
 interface PieceSpriteProps {
     readonly piece: AnimatedPiece;
     readonly isSelected: boolean;
+    readonly flipped: boolean;
 }
 
 function getAnimationDelayMs(effect: AnimatedPiece['effect']): number | undefined {
@@ -17,8 +18,8 @@ function getAnimationDelayMs(effect: AnimatedPiece['effect']): number | undefine
 // Một quân cờ trong lớp phủ animation, đặt tuyệt đối theo % trên bàn cờ 8x8 và
 // transition khi `square` đổi để tạo hiệu ứng trượt. `effect` (nếu có) phát thêm
 // animation "vỡ tan" khi bị ăn hoặc "bừng sáng" khi vừa phong cấp.
-function PieceSprite({ piece, isSelected }: PieceSpriteProps) {
-    const { row, col } = squareToCoords(piece.square);
+function PieceSprite({ piece, isSelected, flipped }: PieceSpriteProps) {
+    const { row, col } = squareToCoords(piece.square, flipped);
     const isCaptured = piece.effect === 'captured';
     const isPromoted = piece.effect === 'promoted';
     const animationDelayMs = getAnimationDelayMs(piece.effect);

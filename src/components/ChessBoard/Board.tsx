@@ -8,7 +8,7 @@ import Square from './Square';
 
 interface BoardProps {
     readonly pieces: AnimatedPiece[];
-    readonly onSquareClick: (row: number, col: number) => void;
+    readonly onSquareClick: (square: SquareName) => void;
     readonly selectedSquare: SquareName | null;
     readonly possibleMoves: string[];
     readonly lastMove: LastMove | null;
@@ -17,6 +17,8 @@ interface BoardProps {
     readonly checkedKingSquare: SquareName | null;
     readonly isCheckFlashing: boolean;
     readonly hint: MoveHint | null;
+    // Xoay bàn cờ để quân Đen ở phía dưới (người chơi cầm Đen).
+    readonly flipped?: boolean;
 }
 
 // Bàn cờ 8x8 kèm tọa độ ở rìa, co giãn theo chiều rộng màn hình (lưới CSS Grid
@@ -36,19 +38,22 @@ export default function Board({
     checkedKingSquare,
     isCheckFlashing,
     hint,
+    flipped = false,
 }: BoardProps) {
     const activeSelection = selectedSquare ?? premoveFrom;
+    const ranks = flipped ? [...RANKS].reverse() : RANKS;
+    const files = flipped ? [...FILES].reverse() : FILES;
 
     return (
         <div className={`relative w-full max-w-120 border-4 rounded-lg overflow-hidden shadow-2xl bg-slate-800 transition-colors duration-150 ${isCheckFlashing ? 'border-red-500 animate-board-shake' : 'border-slate-700'}`}>
             <div className="grid grid-cols-[20px_repeat(8,minmax(0,1fr))] sm:grid-cols-[24px_repeat(8,minmax(0,1fr))]">
-                {RANKS.map((rank, rowIndex) => (
+                {ranks.map((rank, rowIndex) => (
                     <Fragment key={rank}>
                         <div className="flex items-center justify-center text-xs font-semibold text-slate-400">
                             {rank}
                         </div>
-                        {FILES.map((file, colIndex) => {
-                            const squareNotation = coordsToSquare(rowIndex, colIndex);
+                        {files.map((file, colIndex) => {
+                            const squareNotation = coordsToSquare(rowIndex, colIndex, flipped);
 
                             return (
                                 <Square
@@ -62,14 +67,14 @@ export default function Board({
                                     isCheckedKing={checkedKingSquare === squareNotation}
                                     isHintFrom={hint?.from === squareNotation}
                                     isHintTo={hint?.to === squareNotation}
-                                    onClick={() => onSquareClick(rowIndex, colIndex)}
+                                    onClick={() => onSquareClick(squareNotation)}
                                 />
                             );
                         })}
                     </Fragment>
                 ))}
                 <div />
-                {FILES.map((file) => (
+                {files.map((file) => (
                     <div key={file} className="h-5 sm:h-6 flex items-center justify-center text-xs font-semibold text-slate-400">
                         {file}
                     </div>
@@ -78,7 +83,7 @@ export default function Board({
 
             <div className="absolute left-5 sm:left-6 top-0 right-0 bottom-5 sm:bottom-6 pointer-events-none">
                 {pieces.map((piece) => (
-                    <PieceSprite key={piece.id} piece={piece} isSelected={activeSelection === piece.square} />
+                    <PieceSprite key={piece.id} piece={piece} isSelected={activeSelection === piece.square} flipped={flipped} />
                 ))}
             </div>
         </div>

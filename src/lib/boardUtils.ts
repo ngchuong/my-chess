@@ -19,20 +19,24 @@ export const PIECE_IMAGES = {
     b: { p: bP, r: bR, n: bN, b: bB, q: bQ, k: bK },
 };
 
-// Người chơi luôn cầm Trắng; máy (chế độ PvE) luôn cầm Đen.
-export const AI_COLOR = 'b';
-export const HUMAN_COLOR = 'w';
-
 export const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 export const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
-export const coordsToSquare = (row: number, col: number): Square => {
-    return `${FILES[col]}${RANKS[row]}` as Square;
+// `flipped`: bàn cờ nhìn từ phía Đen (hàng 1 ở trên, cột h bên trái) — dùng khi
+// người chơi cầm Đen ở chế độ đấu với máy. (row, col) luôn là toạ độ hiển thị.
+export const coordsToSquare = (row: number, col: number, flipped = false): Square => {
+    return flipped
+        ? `${FILES[7 - col]}${RANKS[7 - row]}` as Square
+        : `${FILES[col]}${RANKS[row]}` as Square;
 };
 
-export const squareToCoords = (square: Square): { row: number; col: number } => {
-    return { row: RANKS.indexOf(square[1]), col: FILES.indexOf(square[0]) };
+export const squareToCoords = (square: Square, flipped = false): { row: number; col: number } => {
+    const row = RANKS.indexOf(square[1]);
+    const col = FILES.indexOf(square[0]);
+    return flipped ? { row: 7 - row, col: 7 - col } : { row, col };
 };
+
+export const oppositeColor = (color: 'w' | 'b'): 'w' | 'b' => (color === 'w' ? 'b' : 'w');
 
 export const colorLabel = (color: 'w' | 'b') => (color === 'w' ? 'Trắng' : 'Đen');
 

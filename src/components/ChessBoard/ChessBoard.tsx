@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { AI_COLOR, colorLabel, coordsToSquare } from '../../lib/boardUtils';
+import { colorLabel, oppositeColor } from '../../lib/boardUtils';
 import { CAPTURE_CLEANUP_MS, MOVE_SLIDE_MS, PROMOTE_CLEANUP_MS } from '../../lib/animation';
 import { difficultyLabel } from '../../lib/engine/difficulty';
 import { useAIOpponent } from '../../hooks/useAIOpponent';
@@ -12,6 +12,7 @@ import { useMoveSelection } from '../../hooks/useMoveSelection';
 import { useMoveSound } from '../../hooks/useMoveSound';
 import { usePremove } from '../../hooks/usePremove';
 import { useSoundSettings } from '../../hooks/useSoundSettings';
+import type { Square as SquareName } from 'chess.js';
 import type { LastMove } from '../../types/chess';
 import type { GameSettings } from '../../types/game';
 import Button from '../ui/Button';
@@ -68,16 +69,22 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         return () => clearTimeout(timer);
     }, [isMatchOver, flagFall, lastMove]);
 
-    useAIOpponent(game, applyMove, settings.mode, settings.difficulty, isMatchOver);
+    const isPve = settings.mode === 'pve';
+    const humanColor = settings.playerColor;
+    const aiColor = oppositeColor(humanColor);
+    // Người chơi cầm Đen thì xoay bàn cờ để quân của mình nằm ở phía dưới.
+    const isBoardFlipped = isPve && humanColor === 'b';
+
+    useAIOpponent(game, applyMove, settings.mode, settings.difficulty, aiColor, isMatchOver);
 
     // Engine chỉ cần cho chế độ đấu với máy — ván PvP không tải một byte nào. Bắt đầu
     // tải ngay khi vào ván để nó sẵn sàng trước khi máy phải đi nước đầu tiên.
-    const engineStatus = useEngineStatus(settings.mode === 'pve');
+    const engineStatus = useEngineStatus(isPve);
 
     // Gợi ý chỉ dành cho chế độ đấu với máy: ở PvP, hai người dùng chung một bàn cờ
     // nên hiện nước tốt nhất sẽ lộ nước đi cho cả hai bên.
-    const isHintEnabled = settings.mode === 'pve' && settings.showHints;
-    const { hint, isHintLoading } = useMoveHint(game, isHintEnabled, isMatchOver);
+    const isHintEnabled = isPve && settings.showHints;
+    const { hint, isHintLoading } = useMoveHint(game, isHintEnabled, humanColor, isMatchOver);
 
     const {
         isPremoveMode,
@@ -88,7 +95,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         choosePromotion: choosePremovePromotion,
         cancelPremove,
         resetPremove,
-    } = usePremove(game, applyMove, settings.mode, isMatchOver);
+    } = usePremove(game, applyMove, settings.mode, humanColor, isMatchOver);
     const {
         selectedSquare,
         possibleMoves,
@@ -115,10 +122,8 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
         setShowGameOverModal(false);
     };
 
-    const handleSquareClick = (row: number, col: number) => {
+    const handleSquareClick = (squareNotation: SquareName) => {
         if (isMatchOver || pendingPromotion) return;
-
-        const squareNotation = coordsToSquare(row, col);
 
         if (isPremoveMode) {
             handlePremoveSquareClick(squareNotation);
@@ -129,14 +134,12 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
     };
 
     const getGameStatus = (): string => {
-        const isPve = settings.mode === 'pve';
-
         if (isMatchOver) return 'Trận đấu đã kết thúc';
         // Engine hỏng thì máy không đi được nữa — phải báo ngay ở dòng trạng thái, vì
         // người chơi có thể đã tắt gợi ý và sẽ không thấy thông báo ở bảng gợi ý.
         if (isPve && engineStatus === 'error') return 'Không tải được engine cờ';
         if (game.inCheck()) return `Đang bị Chiếu! Lượt của: ${colorLabel(game.turn())}`;
-        if (isPve && game.turn() === AI_COLOR) {
+        if (isPve && game.turn() === aiColor) {
             return engineStatus === 'ready' ? 'Máy đang suy nghĩ...' : 'Đang tải engine cờ...';
         }
         return `Lượt đi: ${colorLabel(game.turn())}`;
@@ -144,11 +147,11 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
 
     const getGameOverInfo = (): GameOverInfo | null => {
         if (flagFall) {
-            const winner = flagFall === 'w' ? 'b' : 'w';
+            const winner = oppositeColor(flagFall);
             return { title: 'Hết giờ!', detail: `Bên ${colorLabel(winner)} thắng!` };
         }
         if (game.isCheckmate()) {
-            const winner = game.turn() === 'w' ? 'b' : 'w';
+            const winner = oppositeColor(game.turn());
             return { title: 'Chiếu hết!', detail: `Bên ${colorLabel(winner)} thắng!` };
         }
         if (game.isStalemate()) {
@@ -175,12 +178,12 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
 
     const modeLabel = settings.mode === 'pvp'
         ? '2 người'
-        : `Đấu với máy — ${difficultyLabel(settings.difficulty)}`;
+        : `Đấu với máy — ${difficultyLabel(settings.difficulty)} — Bạn cầm ${colorLabel(humanColor)}`;
 
     if (isReviewing) {
         return (
             <Suspense fallback={<div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center">Đang mở phần xem lại...</div>}>
-                <GameReview moveHistory={moveHistory} onClose={() => setIsReviewing(false)} />
+                <GameReview moveHistory={moveHistory} onClose={() => setIsReviewing(false)} flipped={isBoardFlipped} />
             </Suspense>
         );
     }
@@ -209,6 +212,7 @@ export default function ChessBoard({ settings, onExit }: ChessBoardProps) {
                 checkedKingSquare={checkedKingSquare}
                 isCheckFlashing={isCheckFlashing}
                 hint={hint}
+                flipped={isBoardFlipped}
             />
 
             {isHintEnabled && <HintPanel hint={hint} isLoading={isHintLoading} engineStatus={engineStatus} />}

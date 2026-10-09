@@ -17,11 +17,13 @@ function evalToneClass(scoreCp: number): string {
     return 'text-slate-300';
 }
 
-// Bảng gợi ý nước đi cho người chơi (chế độ đấu với máy). Chiều cao tối thiểu cố định
-// để bàn cờ không bị nhảy lên xuống mỗi khi gợi ý xuất hiện/biến mất giữa các lượt.
+// Bảng gợi ý nước đi cho người chơi (chế độ đấu với máy). Chiều cao cố định (không chỉ
+// tối thiểu) vì màn hình căn giữa theo chiều dọc: khung cao lên/thấp xuống giữa lúc
+// "đang tìm" (1 dòng) và lúc có gợi ý (tới ~6 dòng) sẽ kéo cả bàn cờ nhảy theo. Chiều
+// cao đủ cho gợi ý dài nhất trên màn rộng; nội dung xuống dòng nhiều hơn thì cuộn trong khung.
 export default function HintPanel({ hint, isLoading, engineStatus }: HintPanelProps) {
     return (
-        <div className="w-full max-w-120 mt-3 min-h-18 bg-slate-800/60 border border-emerald-500/30 rounded-lg p-3 text-sm">
+        <div className="w-full max-w-120 mt-3 h-40 overflow-y-auto bg-slate-800/60 border border-emerald-500/30 rounded-lg p-3 text-sm">
             {engineStatus === 'error' && (
                 <p className="text-rose-400">Không tải được engine cờ — gợi ý và máy đối thủ tạm thời không hoạt động.</p>
             )}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { difficultyLabel } from '../../lib/engine/difficulty';
+import type { PieceColor } from '../../types/chess';
 import type { GameSettings, GameMode, Difficulty, TimeControlMinutes } from '../../types/game';
 import Button from '../ui/Button';
 import OptionGroup from './OptionGroup';
@@ -29,6 +30,20 @@ const HINT_OPTIONS: { label: string; value: boolean }[] = [
     { label: 'Tắt', value: false },
 ];
 
+type ColorChoice = PieceColor | 'random';
+
+// Trắng luôn đi trước — chọn màu quân cũng chính là chọn đi trước hay đi sau.
+const COLOR_OPTIONS: { label: string; value: ColorChoice }[] = [
+    { label: 'Trắng (đi trước)', value: 'w' },
+    { label: 'Đen (đi sau)', value: 'b' },
+    { label: 'Ngẫu nhiên', value: 'random' },
+];
+
+const resolveColor = (choice: ColorChoice): PieceColor => {
+    if (choice !== 'random') return choice;
+    return Math.random() < 0.5 ? 'w' : 'b';
+};
+
 interface GameMenuProps {
     readonly onStart: (settings: GameSettings) => void;
 }
@@ -38,6 +53,11 @@ export default function GameMenu({ onStart }: GameMenuProps) {
     const [difficulty, setDifficulty] = useState<Difficulty>('medium');
     const [timeControlMinutes, setTimeControlMinutes] = useState<TimeControlMinutes>(5);
     const [showHints, setShowHints] = useState(true);
+    const [colorChoice, setColorChoice] = useState<ColorChoice>('w');
+
+    const handleStart = () => {
+        onStart({ mode, difficulty, timeControlMinutes, showHints, playerColor: resolveColor(colorChoice) });
+    };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
@@ -48,6 +68,7 @@ export default function GameMenu({ onStart }: GameMenuProps) {
 
                 {mode === 'pve' && (
                     <>
+                        <OptionGroup label="Quân của bạn" options={COLOR_OPTIONS} value={colorChoice} onChange={setColorChoice} columns={3} />
                         <OptionGroup label="Độ khó" options={DIFFICULTY_OPTIONS} value={difficulty} onChange={setDifficulty} columns={3} />
                         <OptionGroup label="Gợi ý nước đi" options={HINT_OPTIONS} value={showHints} onChange={setShowHints} columns={2} />
                     </>
@@ -55,7 +76,7 @@ export default function GameMenu({ onStart }: GameMenuProps) {
 
                 <OptionGroup label="Thời gian" options={TIME_OPTIONS} value={timeControlMinutes} onChange={setTimeControlMinutes} columns={3} />
 
-                <Button variant="primary" size="lg" fullWidth onClick={() => onStart({ mode, difficulty, timeControlMinutes, showHints })}>
+                <Button variant="primary" size="lg" fullWidth onClick={handleStart}>
                     Bắt đầu
                 </Button>
             </div>

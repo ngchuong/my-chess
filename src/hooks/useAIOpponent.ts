@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Chess, Square } from 'chess.js';
-import { AI_COLOR } from '../lib/boardUtils';
 import { aiStrength } from '../lib/engine/difficulty';
 import { analyse, parseUciMove } from '../lib/engine/stockfish';
 import type { ApplyMoveFn } from './useChessGame';
+import type { PieceColor } from '../types/chess';
 import type { Difficulty, GameMode } from '../types/game';
 
 // Stockfish trả lời gần như tức thì ở các mức Elo này — nhanh hơn thời gian người chơi
@@ -18,12 +18,13 @@ export function useAIOpponent(
     applyMove: ApplyMoveFn,
     mode: GameMode,
     difficulty: Difficulty,
+    aiColor: PieceColor,
     isMatchOver: boolean,
 ) {
     const [isThinking, setIsThinking] = useState(false);
 
     const fen = game.fen();
-    const shouldMove = mode === 'pve' && !isMatchOver && game.turn() === AI_COLOR;
+    const shouldMove = mode === 'pve' && !isMatchOver && game.turn() === aiColor;
 
     useEffect(() => {
         if (!shouldMove) {

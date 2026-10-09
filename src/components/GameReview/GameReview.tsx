@@ -11,12 +11,13 @@ import { QUALITY_LABELS, QUALITY_TEXT_CLASSES } from './qualityMeta';
 interface GameReviewProps {
     readonly moveHistory: readonly MoveRecord[];
     readonly onClose: () => void;
+    readonly flipped?: boolean;
 }
 
 // Xem lại ván đấu vừa kết thúc: tua qua từng nước trên bàn cờ tĩnh, kèm engine tự
 // chấm điểm mỗi nước (từ Tốt nhất tới Nước hớ) theo cơ hội thắng bị mất so với nước tốt
 // nhất tìm được ở cùng vị trí. Phân tích chạy nền trong Web Worker nên không treo giao diện.
-export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
+export default function GameReview({ moveHistory, onClose, flipped = false }: GameReviewProps) {
     const { analysis, isAnalyzing, ply, currentFen, currentMove, goToStart, goToEnd, goPrev, goNext, goTo } =
         useGameReview(moveHistory);
 
@@ -60,6 +61,7 @@ export default function GameReview({ moveHistory, onClose }: GameReviewProps) {
                         checkedKingSquare={null}
                         isCheckFlashing={false}
                         hint={null}
+                        flipped={flipped}
                     />
 
                     <div className="flex items-center gap-2">

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Chess, Move, PieceSymbol, Square } from 'chess.js';
-import { AI_COLOR, HUMAN_COLOR } from '../lib/boardUtils';
+import { oppositeColor } from '../lib/boardUtils';
 import type { ApplyMoveFn } from './useChessGame';
-import type { PendingPromotion, Premove } from '../types/chess';
+import type { PendingPromotion, PieceColor, Premove } from '../types/chess';
 import type { GameMode } from '../types/game';
 
 // Cho phép người chơi chọn trước quân + ô đích trong lúc máy đang suy nghĩ
@@ -10,15 +10,22 @@ import type { GameMode } from '../types/game';
 // được tự thực hiện nếu vẫn hợp lệ; nếu không thì âm thầm huỷ. Nếu premove là một
 // nước phong cấp, chờ người chơi chọn quân qua `choosePromotion` giống hệt nước đi
 // thường thay vì tự động phong Hậu.
-export function usePremove(game: Chess, applyMove: ApplyMoveFn, mode: GameMode, isMatchOver: boolean) {
+export function usePremove(
+    game: Chess,
+    applyMove: ApplyMoveFn,
+    mode: GameMode,
+    humanColor: PieceColor,
+    isMatchOver: boolean,
+) {
+    const aiColor = oppositeColor(humanColor);
     const [premoveFrom, setPremoveFrom] = useState<Square | null>(null);
     const [premove, setPremove] = useState<Premove | null>(null);
     const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
 
-    const isPremoveMode = mode === 'pve' && !isMatchOver && game.turn() === AI_COLOR;
+    const isPremoveMode = mode === 'pve' && !isMatchOver && game.turn() === aiColor;
 
     useEffect(() => {
-        if (mode !== 'pve' || isMatchOver || game.turn() === AI_COLOR || !premove) return;
+        if (mode !== 'pve' || isMatchOver || game.turn() === aiColor || !premove) return;
 
         const queued = premove;
         setPremove(null);
@@ -33,12 +40,12 @@ export function usePremove(game: Chess, applyMove: ApplyMoveFn, mode: GameMode, 
         }
 
         applyMove({ from: queued.from, to: queued.to });
-    }, [game, mode, isMatchOver, premove, applyMove]);
+    }, [game, mode, aiColor, isMatchOver, premove, applyMove]);
 
     const handlePremoveSquareClick = useCallback((squareNotation: Square) => {
         const pieceOnSquare = game.get(squareNotation);
 
-        if (pieceOnSquare?.color === HUMAN_COLOR) {
+        if (pieceOnSquare?.color === humanColor) {
             setPremoveFrom(squareNotation);
             setPremove(null);
             return;
@@ -52,7 +59,7 @@ export function usePremove(game: Chess, applyMove: ApplyMoveFn, mode: GameMode, 
 
         setPremoveFrom(null);
         setPremove(null);
-    }, [game, premoveFrom]);
+    }, [game, humanColor, premoveFrom]);
 
     const choosePromotion = useCallback((promotion: PieceSymbol) => {
         if (!pendingPromotion) return;

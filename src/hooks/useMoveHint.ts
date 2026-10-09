@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Chess } from 'chess.js';
-import { HUMAN_COLOR } from '../lib/boardUtils';
 import { HINT_MOVETIME_MS } from '../lib/engine/difficulty';
 import { analyse } from '../lib/engine/stockfish';
 import { buildHint, type MoveHint } from '../lib/moveHint';
+import type { PieceColor } from '../types/chess';
 
 interface HintState {
     fen: string;
@@ -13,11 +13,11 @@ interface HintState {
 // Gợi ý nước đi tốt nhất cho người chơi, tính lại mỗi khi đến lượt họ (tức là ngay sau
 // khi đối thủ vừa đi xong). Việc tìm kiếm nằm trong worker của Stockfish nên giao diện
 // không bị treo; ở đây chỉ điều phối yêu cầu và ghép lời giải thích.
-export function useMoveHint(game: Chess, enabled: boolean, isMatchOver: boolean) {
+export function useMoveHint(game: Chess, enabled: boolean, humanColor: PieceColor, isMatchOver: boolean) {
     const [result, setResult] = useState<HintState | null>(null);
 
     const fen = game.fen();
-    const shouldHint = enabled && !isMatchOver && game.turn() === HUMAN_COLOR;
+    const shouldHint = enabled && !isMatchOver && game.turn() === humanColor;
 
     useEffect(() => {
         if (!shouldHint) return;
